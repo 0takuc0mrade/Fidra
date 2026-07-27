@@ -14,3 +14,8 @@ remappings = [
 
 [rpc_endpoints]
 arc_testnet = "${ARC_RPC_URL}"
+
+[invariant]
+runs = 128
+depth = 64
+fail_on_revert = false

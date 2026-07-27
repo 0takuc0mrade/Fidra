@@ -6,16 +6,20 @@ import {PlatformRegistry} from "./PlatformRegistry.sol";
 
 /// @title EarningsManager
 /// @notice Manages worker earnings claims for Fidra v1.
-/// @dev Platforms create and certify claims. The authorized vault marks claims as advanced/settled.
+/// @dev Platforms create and certify claims. The authorized vault marks claims as advanced,
+///      settled, or defaulted.
 ///      Certified claims are immutable and cannot be revoked.
 contract EarningsManager is Ownable {
+    uint256 public constant MAX_BATCH_SIZE = 50;
+
     enum ClaimStatus {
         None,
         Pending,
         Certified,
         Cancelled,
         Advanced,
-        Settled
+        Settled,
+        Defaulted
     }
 
     struct Claim {
@@ -43,6 +47,9 @@ contract EarningsManager is Ownable {
     error TaskHashAlreadyUsed(uint256 platformId, bytes32 taskHash);
     error NotAuthorizedVault(address caller);
     error VaultAlreadySet();
+    error EmptyBatch();
+    error BatchTooLarge(uint256 size, uint256 maximum);
+    error BatchLengthMismatch();
 
     // --- Events ---
 
@@ -59,6 +66,7 @@ contract EarningsManager is Ownable {
     event ClaimCancelled(uint256 indexed claimId, uint256 indexed platformId);
     event ClaimAdvanced(uint256 indexed claimId);
     event ClaimSettled(uint256 indexed claimId);
+    event ClaimDefaulted(uint256 indexed claimId);
     event VaultAuthorized(address indexed vault);
 
     // --- State ---
@@ -101,27 +109,39 @@ contract EarningsManager is Ownable {
         bytes32 evidenceHash
     ) external returns (uint256 claimId) {
         _requireActivePlatformWallet(platformId);
-        if (worker == address(0)) revert ZeroAddress();
-        if (faceValue == 0) revert ZeroAmount();
-        if (dueDate == 0) revert ZeroDueDate();
-        if (dueDate <= uint64(block.timestamp)) revert DueDateInPast(dueDate);
-        if (taskHash == bytes32(0)) revert ZeroTaskHash();
-        if (evidenceHash == bytes32(0)) revert ZeroEvidenceHash();
-        if (_usedTaskHashes[platformId][taskHash]) revert TaskHashAlreadyUsed(platformId, taskHash);
+        claimId = _createClaim(platformId, worker, faceValue, dueDate, taskHash, evidenceHash);
+    }
 
-        _usedTaskHashes[platformId][taskHash] = true;
-        claimId = _nextClaimId++;
-        _claims[claimId] = Claim({
-            platformId: platformId,
-            worker: worker,
-            faceValue: faceValue,
-            dueDate: dueDate,
-            taskHash: taskHash,
-            evidenceHash: evidenceHash,
-            status: ClaimStatus.Pending
-        });
+    /// @notice Atomically creates and certifies a bounded batch of earnings claims.
+    /// @dev Every item uses the single-claim validation and per-platform task-hash policy.
+    function createAndCertifyClaimsBatch(
+        uint256 platformId,
+        address[] calldata workers,
+        uint256[] calldata faceValues,
+        uint64[] calldata dueDates,
+        bytes32[] calldata taskHashes,
+        bytes32[] calldata evidenceHashes
+    ) external returns (uint256[] memory claimIds) {
+        uint256 length = workers.length;
+        if (length == 0) revert EmptyBatch();
+        if (length > MAX_BATCH_SIZE) revert BatchTooLarge(length, MAX_BATCH_SIZE);
+        if (
+            faceValues.length != length || dueDates.length != length || taskHashes.length != length
+                || evidenceHashes.length != length
+        ) {
+            revert BatchLengthMismatch();
+        }
 
-        emit ClaimCreated(claimId, platformId, worker, faceValue, dueDate, taskHash, evidenceHash);
+        _requireActivePlatformWallet(platformId);
+        claimIds = new uint256[](length);
+
+        for (uint256 i; i < length; ++i) {
+            uint256 claimId =
+                _createClaim(platformId, workers[i], faceValues[i], dueDates[i], taskHashes[i], evidenceHashes[i]);
+            _claims[claimId].status = ClaimStatus.Certified;
+            claimIds[i] = claimId;
+            emit ClaimCertified(claimId, platformId);
+        }
     }
 
     /// @notice Certifies a pending claim, making it eligible for advance and immutable.
@@ -164,6 +184,15 @@ contract EarningsManager is Ownable {
         emit ClaimSettled(claimId);
     }
 
+    /// @notice Marks an advanced claim as resolved through platform default.
+    function markDefaulted(uint256 claimId) external {
+        _requireVault();
+        Claim storage claim = _requireClaim(claimId);
+        if (claim.status != ClaimStatus.Advanced) revert InvalidClaimStatus(claimId, claim.status);
+        claim.status = ClaimStatus.Defaulted;
+        emit ClaimDefaulted(claimId);
+    }
+
     // --- Views ---
 
     function getClaim(uint256 claimId) external view returns (Claim memory) {
@@ -179,6 +208,37 @@ contract EarningsManager is Ownable {
     function _requireClaim(uint256 claimId) private view returns (Claim storage claim) {
         claim = _claims[claimId];
         if (claim.status == ClaimStatus.None) revert ClaimNotFound(claimId);
+    }
+
+    function _createClaim(
+        uint256 platformId,
+        address worker,
+        uint256 faceValue,
+        uint64 dueDate,
+        bytes32 taskHash,
+        bytes32 evidenceHash
+    ) private returns (uint256 claimId) {
+        if (worker == address(0)) revert ZeroAddress();
+        if (faceValue == 0) revert ZeroAmount();
+        if (dueDate == 0) revert ZeroDueDate();
+        if (dueDate <= uint64(block.timestamp)) revert DueDateInPast(dueDate);
+        if (taskHash == bytes32(0)) revert ZeroTaskHash();
+        if (evidenceHash == bytes32(0)) revert ZeroEvidenceHash();
+        if (_usedTaskHashes[platformId][taskHash]) revert TaskHashAlreadyUsed(platformId, taskHash);
+
+        _usedTaskHashes[platformId][taskHash] = true;
+        claimId = _nextClaimId++;
+        _claims[claimId] = Claim({
+            platformId: platformId,
+            worker: worker,
+            faceValue: faceValue,
+            dueDate: dueDate,
+            taskHash: taskHash,
+            evidenceHash: evidenceHash,
+            status: ClaimStatus.Pending
+        });
+
+        emit ClaimCreated(claimId, platformId, worker, faceValue, dueDate, taskHash, evidenceHash);
     }
 
     function _requireActivePlatformWallet(uint256 platformId) private view {
