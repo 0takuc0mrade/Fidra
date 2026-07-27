@@ -1,0 +1,134 @@
+{
+  "network": "arc-testnet",
+  "chainId": 5042002,
+  "rpcEnvKey": "ARC_RPC_URL",
+  "rpcUrl": "https://rpc.testnet.arc.network",
+  "blockExplorer": "https://testnet.arcscan.app",
+  "usdc": {
+    "address": "0x3600000000000000000000000000000000000000",
+    "decimals": 6,
+    "accountingSurface": "ERC-20"
+  },
+  "contracts": {
+    "MandateManager": {
+      "address": "0xEfA2b3e70138810eA51552177c3f1AE5ab249EF2",
+      "deploymentTransactionHash": "0xfd80556d75852b719a4c30566bfb32c2e66d4de20a4b31f608ebbfd185bc5400",
+      "deploymentBlock": 51683343,
+      "explorerUrl": "https://testnet.arcscan.app/address/0xEfA2b3e70138810eA51552177c3f1AE5ab249EF2",
+      "transactionExplorerUrl": "https://testnet.arcscan.app/tx/0xfd80556d75852b719a4c30566bfb32c2e66d4de20a4b31f608ebbfd185bc5400"
+    },
+    "AdvanceVault": {
+      "address": "0x5F7Bec9eC341F816182a56D8E033cac63DBd8C8B",
+      "deploymentTransactionHash": "0xec03528e9f33277e09f89198f2b56623e1b36b9cf0fe25301c01c76e6e614cb2",
+      "deploymentBlock": 51683350,
+      "explorerUrl": "https://testnet.arcscan.app/address/0x5F7Bec9eC341F816182a56D8E033cac63DBd8C8B",
+      "transactionExplorerUrl": "https://testnet.arcscan.app/tx/0xec03528e9f33277e09f89198f2b56623e1b36b9cf0fe25301c01c76e6e614cb2"
+    }
+  },
+  "owner": "0xeC68c705001a158d0f810182Ca205887679E33f5",
+  "discountBps": 100,
+  "authorizationFrozen": false,
+  "authorization": {
+    "transactionHash": "0xe4fe5a23327703d29980f6caa1f38df1cb88091fc0412ee2f2c37cef0be7ace0",
+    "block": 51683353,
+    "explorerUrl": "https://testnet.arcscan.app/tx/0xe4fe5a23327703d29980f6caa1f38df1cb88091fc0412ee2f2c37cef0be7ace0"
+  },
+  "liquidity": {
+    "amountUnits": "5000000",
+    "approvalTransactionHash": "0xa3a95c09283ef11c752a31df59836f2f07fa5b5a287c7cb64ac21613582a4dba",
+    "approvalBlock": 51688809,
+    "approvalExplorerUrl": "https://testnet.arcscan.app/tx/0xa3a95c09283ef11c752a31df59836f2f07fa5b5a287c7cb64ac21613582a4dba",
+    "depositTransactionHash": "0x5ee8ef7c8f60414055a2694111b708381257cb9286cdc5278a643ebffc9a833d",
+    "depositBlock": 51689037,
+    "depositExplorerUrl": "https://testnet.arcscan.app/tx/0x5ee8ef7c8f60414055a2694111b708381257cb9286cdc5278a643ebffc9a833d"
+  },
+  "smokeFlow": {
+    "runId": 1,
+    "mandateId": "1",
+    "spendId": "1",
+    "faceAmountUnits": "1000000",
+    "advanceAmountUnits": "990000",
+    "realizedSpreadUnits": "10000",
+    "externalRefHash": "0x41dac3dff725973781523a4fd915ad43d145188079e21470012f7430f4a1d1b5",
+    "proofHash": "0xaed228b3b7488cbaa4e7047c0e52841a3378e19f84d01ff9874e93b63a8b77e9",
+    "metadataHash": "0x1cc5761754fd9432b57f72446aef82ba0b8f96f41e8f351671042799e8474dfd",
+    "transactions": {
+      "managerApproval": {
+        "hash": "0x828576130350061811fe03fc7d7dda0594c6722b4c294c7043e964fac1c1feb1",
+        "block": 51689511,
+        "explorerUrl": "https://testnet.arcscan.app/tx/0x828576130350061811fe03fc7d7dda0594c6722b4c294c7043e964fac1c1feb1"
+      },
+      "createMandate": {
+        "hash": "0x4ce8b0f480d6e11ced9e54f8ea40c96cceac2b00ee2ffaf5ea7499851f8c447b",
+        "block": 51689803,
+        "explorerUrl": "https://testnet.arcscan.app/tx/0x4ce8b0f480d6e11ced9e54f8ea40c96cceac2b00ee2ffaf5ea7499851f8c447b"
+      },
+      "requestSpend": {
+        "hash": "0xe2aabba7f5f572c628d503f2209086bc412cb082b9fe2ccda971efae36f55627",
+        "block": 51689982,
+        "explorerUrl": "https://testnet.arcscan.app/tx/0xe2aabba7f5f572c628d503f2209086bc412cb082b9fe2ccda971efae36f55627"
+      },
+      "submitProof": {
+        "hash": "0x692ceaf400a2cc6a4e62bb13ce7a50866eb4c0a0736a2c9285481800eafa82fc",
+        "block": 51690377,
+        "explorerUrl": "https://testnet.arcscan.app/tx/0x692ceaf400a2cc6a4e62bb13ce7a50866eb4c0a0736a2c9285481800eafa82fc"
+      },
+      "approveSpend": {
+        "hash": "0xd6cbf963086d324417dfd0112ebdeebaf4691dde0c183ebe421dd24ad57e9dc4",
+        "block": 51690491,
+        "explorerUrl": "https://testnet.arcscan.app/tx/0xd6cbf963086d324417dfd0112ebdeebaf4691dde0c183ebe421dd24ad57e9dc4"
+      },
+      "lockSpend": {
+        "hash": "0xe37d16083792228c0717ed5bc227699dca7be75f824b33e177da0f13982c48a5",
+        "block": 51690624,
+        "explorerUrl": "https://testnet.arcscan.app/tx/0xe37d16083792228c0717ed5bc227699dca7be75f824b33e177da0f13982c48a5"
+      },
+      "buyClaim": {
+        "hash": "0xa77e5bebd485107894c98da852e2eee003134fe436c4379cc76ea25419c26d18",
+        "block": 51690773,
+        "explorerUrl": "https://testnet.arcscan.app/tx/0xa77e5bebd485107894c98da852e2eee003134fe436c4379cc76ea25419c26d18"
+      },
+      "revokeMandate": {
+        "hash": "0x8586c782389b3f4d0706b39953c85dafd7864dc4fe79dba024c70d03805ce673",
+        "block": 51690895,
+        "explorerUrl": "https://testnet.arcscan.app/tx/0x8586c782389b3f4d0706b39953c85dafd7864dc4fe79dba024c70d03805ce673"
+      },
+      "releaseSpend": {
+        "hash": "0xb660ef4fa721550cb9018ea22fabc3d20e156199fdce309bfe521afdf11cd334",
+        "block": 51691030,
+        "explorerUrl": "https://testnet.arcscan.app/tx/0xb660ef4fa721550cb9018ea22fabc3d20e156199fdce309bfe521afdf11cd334"
+      },
+      "markClaimSettled": {
+        "hash": "0xd80a21c1ae6e354bf64989c01a22487a3a62ebd3782026a9c2c0254a9d50dbe5",
+        "block": 51691172,
+        "explorerUrl": "https://testnet.arcscan.app/tx/0xd80a21c1ae6e354bf64989c01a22487a3a62ebd3782026a9c2c0254a9d50dbe5"
+      }
+    },
+    "finalState": {
+      "mandateStatus": "Revoked",
+      "mandateReservedUnits": "0",
+      "mandateSpentUnits": "1000000",
+      "claimStatus": "Released",
+      "claimPayee": "0x5F7Bec9eC341F816182a56D8E033cac63DBd8C8B",
+      "claimSettled": true
+    }
+  },
+  "verification": {
+    "checkedAt": "2026-07-14",
+    "checkedAtBlock": 51691257,
+    "usdcDecimals": 6,
+    "vaultLiquidityUnits": "5010000",
+    "liquidityDepositedUnits": "5000000",
+    "totalAdvancedUnits": "990000",
+    "faceValueAcquiredUnits": "1000000",
+    "expectedSpreadUnits": "10000",
+    "repaymentsRecognizedUnits": "1000000",
+    "realizedSpreadUnits": "10000"
+  },
+  "recordedAt": "2026-07-14",
+  "notes": [
+    "Do not redeploy this milestone.",
+    "Do not freeze the authorized vault until the documented post-deploy checklist passes.",
+    "The first live claim smoke flow completed and settled successfully; AdvanceVault has 5.01 USDC of accounted and available ERC-20 liquidity."
+  ]
+}

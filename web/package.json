@@ -1,0 +1,31 @@
+{
+  "name": "fidra-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test",
+    "sync:abis": "node ../shared/scripts/export-abis.mjs"
+  },
+  "dependencies": {
+    "@circle-fin/w3s-pw-web-sdk": "^1.1.11",
+    "@phosphor-icons/react": "^2.1.10",
+    "@vitejs/plugin-react": "5.0.4",
+    "lucide-react": "^0.468.0",
+    "motion": "^12.23.24",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "viem": "^2.55.1",
+    "vite": "6.4.3"
+  },
+  "devDependencies": {
+    "vite-plugin-node-polyfills": "0.28.0"
+  },
+  "overrides": {
+    "undici": "6.27.0",
+    "uuid": "11.1.1"
+  }
+}
