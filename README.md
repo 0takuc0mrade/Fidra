@@ -73,7 +73,11 @@ Implemented locally:
 - deterministic unit/fuzz tests; and
 - handler-based stateful invariant tests.
 
-V1.1 has not been deployed. Deployment requires a separate explicit decision after review of this correctness milestone.
+V1.1 has not been deployed. A controlled Arc Testnet deployment is being
+prepared from commit `b2477d047f95f60288ec12e099f7b857492fd410`.
+Broadcast remains fail-closed until the required role wallets, small test
+amounts, clean deployment-tooling commit, and complete validation gate are all
+confirmed. See [the V1.1 Arc Testnet runbook](docs/V1_1_ARC_TESTNET_DEPLOYMENT.md).
 
 Excluded from V1.1:
 
@@ -98,7 +102,8 @@ fidra/
 │       └── FidraV11Invariant.t.sol
 ├── docs/
 │   ├── V1_PRODUCT_SPEC.md
-│   └── V1_ARCHITECTURE.md
+│   ├── V1_ARCHITECTURE.md
+│   └── V1_1_ARC_TESTNET_DEPLOYMENT.md
 ├── deployments/
 ├── server/     # legacy v0 integration evidence; untouched by V1.1
 ├── web/        # legacy v0 interface evidence; untouched by V1.1

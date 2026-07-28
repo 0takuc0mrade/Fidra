@@ -1,0 +1,23 @@
+{
+  "network": "arc-testnet",
+  "chainId": 5042002,
+  "milestone": "Fidra V1.1 Controlled Arc Testnet Deployment",
+  "status": "preflight-blocked",
+  "protocolCommit": "b2477d047f95f60288ec12e099f7b857492fd410",
+  "legacyV0Artifact": "deployments/arc-testnet/latest.json",
+  "contracts": {
+    "PlatformRegistry": null,
+    "EarningsManager": null,
+    "AdvanceVaultV2": null
+  },
+  "transactions": [],
+  "sourceVerification": {
+    "PlatformRegistry": "not-deployed",
+    "EarningsManager": "not-deployed",
+    "AdvanceVaultV2": "not-deployed"
+  },
+  "blockers": [
+    "WORKER_WALLET is missing",
+    "No V1.1 transaction has been broadcast"
+  ]
+}

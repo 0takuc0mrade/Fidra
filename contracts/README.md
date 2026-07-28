@@ -1,29 +1,49 @@
-# Contracts
+# Fidra contracts
 
-Foundry project for Fidra's Arc smart contracts. The current milestone implements:
+Foundry project for Fidra's current embedded instant-payout protocol.
 
-- `MandateManager`: funded mandates, allowlisted vendor requests, proof and approval, irrevocable lock, controlled payee assignment, one-way authorized-vault freeze, deadline-backed permissionless release, revocation, and reserve-safe reclaim.
-- `AdvanceVault`: owner-funded USDC liquidity, fixed-discount purchases with seller minimum/deadline protection, atomic single-use vault assignment, and repayment/spread accounting.
+## Current V1.1 contracts
 
-The contracts are live on Arc Testnet at the addresses recorded in [`deployments/arc-testnet/latest.json`](../deployments/arc-testnet/latest.json). The first 1 USDC smoke claim settled successfully after being advanced at a fixed 100 bps discount and released after parent-mandate revocation. The authorized, deliberately unfrozen `AdvanceVault` now has 5.01 USDC of accounted and available liquidity, including 0.01 USDC realized spread. Do not redeploy or freeze yet. Freezing permanently disables vault rotation but does not disable purchases by that vault. Live Circle integrations, LP shares, and vault withdrawals remain out of scope.
+- `PlatformRegistry`: platform settlement wallets, status, credit limits,
+  purchased-claim exposure, reserves, settlement delegates, and advance fees.
+- `EarningsManager`: immutable certified worker earnings claims and bounded
+  atomic batch certification.
+- `AdvanceVaultV2`: principal-booked worker advances, authorized platform
+  settlement, reserve-backed default resolution, and explicit cash
+  reconciliation.
+
+V1.1 has not yet been deployed. The controlled Arc Testnet scripts are:
+
+- `script/DeployFidraV11.s.sol`: deploys and links fresh V1.1 contracts and
+  registers one small test platform;
+- `script/FundFidraV11.s.sol`: funds its small reserve and vault liquidity;
+- `script/CheckFidraV11Deployment.s.sol`: verifies live linkage, roles,
+  platform state, and accounting;
+- `script/RecordFidraV11Deployment.s.sol`: records confirmed Foundry receipts
+  in a V1.1-specific JSON artifact.
+
+Each mutating V1.1 script distinguishes dry-run from broadcast context and
+requires `V1_BROADCAST_CONFIRMED=true` in broadcast mode. No script reads a raw
+private key.
+
+See
+[`docs/V1_1_ARC_TESTNET_DEPLOYMENT.md`](../docs/V1_1_ARC_TESTNET_DEPLOYMENT.md)
+for the fail-closed runbook.
 
 ## Commands
 
 ```bash
+forge fmt --check
 forge build
-forge test
+forge test -vv
 ```
 
-Arc Testnet support lives in:
+All protocol amounts use the six-decimal Arc ERC-20 USDC interface. V1.1 tests
+use a local six-decimal `MockUSDC`.
 
-- `script/DeployFidra.s.sol`: validates Arc and ERC-20 USDC, deploys both contracts, authorizes the vault, and freezes only when explicitly requested;
-- `script/CheckFidraDeployment.s.sol`: read-only live configuration and vault-accounting assertions;
-- `script/PrepareVaultLiquidity.s.sol`: capped, read-only demo-liquidity readiness checks;
-- `script/SmokeFidra.s.sol`: capped, read-only single-wallet smoke readiness and exact quote/hash generation; and
-- `.env.example`: non-secret Arc configuration and post-deploy address fields.
+## Legacy V0
 
-Follow [`docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md) for verification, direct Arc RPC liquidity/smoke transactions, freeze, and frontend handoff commands. Arc USDC invokes protocol system contracts that Forge's local EVM may not model, so the liquidity and smoke scripts intentionally never broadcast. Do not commit private keys or a populated `.env`.
-
-All contract amounts use the 6-decimal units of Arc's ERC-20 USDC interface. Tests use a local 6-decimal `MockUSDC` plus one fee-on-transfer rejection mock. Run the suite for the current passing test count.
-
-See [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) and [`docs/SECURITY_INVARIANTS.md`](../docs/SECURITY_INVARIANTS.md) for the broader design and invariants.
+`MandateManager` and `AdvanceVault` remain unchanged as historical Arc Testnet
+evidence. Their deployment scripts, smoke scripts, addresses, and live ledger
+must not be reused or overwritten by V1.1. The canonical V0 artifact remains
+[`deployments/arc-testnet/latest.json`](../deployments/arc-testnet/latest.json).
