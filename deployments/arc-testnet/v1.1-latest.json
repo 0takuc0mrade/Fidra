@@ -1,0 +1,129 @@
+{
+  "network": "arc-testnet",
+  "chainId": 5042002,
+  "milestone": "Fidra V1.1 Controlled Arc Testnet Deployment",
+  "status": "deployed-verified-smoke-complete",
+  "gitCommit": "4221e55ccb3e2a4c25fe78f0388a76cc616ee1cc",
+  "protocolCommit": "b2477d047f95f60288ec12e099f7b857492fd410",
+  "legacyV0Artifact": "deployments/arc-testnet/latest.json",
+  "explorer": "https://testnet.arcscan.app",
+  "usdc": {
+    "address": "0x3600000000000000000000000000000000000000",
+    "decimals": 6
+  },
+  "roles": {
+    "owner": "0xeC68c705001a158d0f810182Ca205887679E33f5",
+    "platformSettlementWallet": "0xeC68c705001a158d0f810182Ca205887679E33f5",
+    "liquidityProvider": "0xeC68c705001a158d0f810182Ca205887679E33f5",
+    "reserveProvider": "0xeC68c705001a158d0f810182Ca205887679E33f5",
+    "worker": "0x36CF3E9af37552cE45f172AAd253E78F2930348B",
+    "workerProtocolRoles": []
+  },
+  "contracts": {
+    "PlatformRegistry": {
+      "address": "0x20EcB05d90D4F24F8Fcf2785BdE240796B8b1af3",
+      "deploymentBlock": 55168614,
+      "deploymentTransactionHash": "0x7f304196cf5fab603d87d0af30fa01b69cd337eee0a909920c1684e76914cbd5",
+      "transactionSucceeded": true,
+      "sourceVerified": true,
+      "explorerUrl": "https://testnet.arcscan.app/address/0x20EcB05d90D4F24F8Fcf2785BdE240796B8b1af3",
+      "transactionExplorerUrl": "https://testnet.arcscan.app/tx/0x7f304196cf5fab603d87d0af30fa01b69cd337eee0a909920c1684e76914cbd5"
+    },
+    "EarningsManager": {
+      "address": "0xdC1C359fC174Fb8C7cDcbE0e09447d123dD9cD57",
+      "deploymentBlock": 55168619,
+      "deploymentTransactionHash": "0x12df7e518f6414364b6d188e8895d729c2c4d8a3ba54211e2f8428a908b78fe5",
+      "transactionSucceeded": true,
+      "sourceVerified": true,
+      "explorerUrl": "https://testnet.arcscan.app/address/0xdC1C359fC174Fb8C7cDcbE0e09447d123dD9cD57",
+      "transactionExplorerUrl": "https://testnet.arcscan.app/tx/0x12df7e518f6414364b6d188e8895d729c2c4d8a3ba54211e2f8428a908b78fe5"
+    },
+    "AdvanceVaultV2": {
+      "address": "0x12604e5acD074D3499C9ac4D2cbb4Bd39ECE49c5",
+      "deploymentBlock": 55168624,
+      "deploymentTransactionHash": "0xd59ab3ef8ab6828b1f65d53573cc4af21c93939b15b824daf73c40d476ee2c64",
+      "transactionSucceeded": true,
+      "sourceVerified": true,
+      "explorerUrl": "https://testnet.arcscan.app/address/0x12604e5acD074D3499C9ac4D2cbb4Bd39ECE49c5",
+      "transactionExplorerUrl": "https://testnet.arcscan.app/tx/0xd59ab3ef8ab6828b1f65d53573cc4af21c93939b15b824daf73c40d476ee2c64"
+    }
+  },
+  "configuration": {
+    "platformId": 1,
+    "creditLimit": 3000000,
+    "advanceFeeBps": 100,
+    "initialReserve": 400000,
+    "initialVaultLiquidity": 3000000,
+    "registryAuthorizedVault": "0x12604e5acD074D3499C9ac4D2cbb4Bd39ECE49c5",
+    "earningsAuthorizedVault": "0x12604e5acD074D3499C9ac4D2cbb4Bd39ECE49c5"
+  },
+  "transactions": [
+    { "purpose": "deploy PlatformRegistry", "hash": "0x7f304196cf5fab603d87d0af30fa01b69cd337eee0a909920c1684e76914cbd5", "block": 55168614, "success": true },
+    { "purpose": "deploy EarningsManager", "hash": "0x12df7e518f6414364b6d188e8895d729c2c4d8a3ba54211e2f8428a908b78fe5", "block": 55168619, "success": true },
+    { "purpose": "deploy AdvanceVaultV2", "hash": "0xd59ab3ef8ab6828b1f65d53573cc4af21c93939b15b824daf73c40d476ee2c64", "block": 55168624, "success": true },
+    { "purpose": "authorize vault in registry", "hash": "0xa83e07de2093fc98483ab04161b57ec8d77a52a76a52f3cbf5cbe6bb6588e234", "block": 55168629, "success": true },
+    { "purpose": "authorize vault in earnings manager", "hash": "0xa85f6ea58f2a54c5ed19edc1b9acbfcc4c36083b83e9afc62d3317ea832390c7", "block": 55168633, "success": true },
+    { "purpose": "register platform 1", "hash": "0xbbfe5403efdb85e57e850942b65d1e1041aceb507f4fc67743aa432550433ed0", "block": 55168638, "success": true },
+    { "purpose": "approve platform reserve", "hash": "0x84302a22ec1bdf211ad876e203a0bc899f0661e5d3c5098f3aae6eebcdedb85f", "block": 55169129, "success": true },
+    { "purpose": "deposit platform reserve", "hash": "0x727edb50757000eaba4697b48123fa726210c512ad1dd0ca7bb6cef93bd53fef", "block": 55169290, "success": true },
+    { "purpose": "approve vault liquidity", "hash": "0x05ad804972f933c3d8097f190ef11b945fa3bbce7519250d587473ed4dd10243", "block": 55169437, "success": true },
+    { "purpose": "deposit vault liquidity", "hash": "0xc440a6f40f0ac247dc5ab20119895ffa8de5935f17d744f05c0aec1bc5f3def9", "block": 55169539, "success": true },
+    { "purpose": "create success claim 1", "hash": "0xab9343974d90e600e4546828961234d9f8e907417cce9fb3949b33df3a5560bf", "block": 55169755, "success": true },
+    { "purpose": "certify success claim 1", "hash": "0x245f925a276c805f2e81fb364bf52381d504a0ef3d0ec22fb532ed816cbf7664", "block": 55169979, "success": true },
+    { "purpose": "worker purchases claim 1", "hash": "0x18ea34805bffa211ffe299834eae92b9b9c80ac8108f177b3916d01f5f58a414", "block": 55170086, "success": true },
+    { "purpose": "worker attempts unauthorized settlement of claim 1", "hash": "0x43aded88aa7d93e021a8dc68d1b62b2b3cd176b7baa3ca4477ba0dab769db6d3", "block": 55170222, "success": false, "expectedRevert": true },
+    { "purpose": "approve success-claim settlement", "hash": "0x41bf003f95b0606c19ae5b69a370b6841ef008ab8e6ed5bf02fa7a7cf4062e15", "block": 55170392, "success": true },
+    { "purpose": "settle success claim 1", "hash": "0xd93e5bc8ea29206202c79f254e7db23afd8c2b78bd53ec9e1de87267b604e069", "block": 55170541, "success": true },
+    { "purpose": "batch create and certify claims 2 and 3", "hash": "0xcfb33d8dc8edb1e25d93824bc4af55f14a1c216020b153fec378a45e2477f7de", "block": 55170943, "success": true, "createdEvents": 2, "certifiedEvents": 2 },
+    { "purpose": "create default claim 4", "hash": "0x2c8fd125218a47b573e313a602cde676dde79a35f10c8b1a24528e3403449a1f", "block": 55171214, "success": true },
+    { "purpose": "certify default claim 4", "hash": "0xd9e04293ea60563161796885034dca089f895054350caea6c707901c6f9b5270", "block": 55171337, "success": true },
+    { "purpose": "create witness claim 5", "hash": "0x8ff54a4ac1479eaff15ffd0118cfac2f022e18f96405c3f7a0e1b3a24d34d2dd", "block": 55171437, "success": true },
+    { "purpose": "certify witness claim 5", "hash": "0xb58f67c85ed7be720b3fe540930c5635f24004935a5bc281266cba036bfa8531", "block": 55171610, "success": true },
+    { "purpose": "worker purchases default claim 4", "hash": "0xf1c9705071a3ae2904185427beac3cbc2fc34b56c9a700c754e7dc8ee0bbbfd5", "block": 55171820, "success": true },
+    { "purpose": "worker purchases witness claim 5", "hash": "0x1b6cc72f4ff6d94bee99203f67543257d875daa642a9ae40565e8fc691691430", "block": 55171917, "success": true },
+    { "purpose": "resolve reserve-backed default for claim 4", "hash": "0xf06d7cff180d48148d524df3820881e773a247728d0eadb448b316b688296fab", "block": 55173764, "success": true },
+    { "purpose": "worker attempts purchase after platform pause", "hash": "0x2c8aaf8d9b2d5d792afc114719f5ce861b2afad68e97d4b6fd1af3a66e55188e", "block": 55173957, "success": false, "expectedRevert": true },
+    { "purpose": "approve paused-platform witness settlement", "hash": "0x66d1b07b897ac7e80ff1c6f1b7b39270932b9c3046d0108aec0847b3f162bba0", "block": 55174465, "success": true },
+    { "purpose": "settle witness claim 5 while platform paused", "hash": "0x630e6bc611225057583c961c8010d0e7007462bdfe42f28e2358b5d93784103f", "block": 55174588, "success": true }
+  ],
+  "claims": {
+    "1": { "purpose": "successful payout", "faceValue": 1000000, "advanceAmount": 990000, "dueDate": 1785802357, "status": "Settled" },
+    "2": { "purpose": "batch certification and paused-purchase rejection", "faceValue": 1000000, "dueDate": 1785810108, "status": "Certified" },
+    "3": { "purpose": "batch certification", "faceValue": 1000000, "dueDate": 1785810108, "status": "Certified" },
+    "4": { "purpose": "reserve-backed default", "faceValue": 1000000, "advanceAmount": 990000, "dueDate": 1785797102, "status": "Defaulted" },
+    "5": { "purpose": "paused-platform settlement witness", "faceValue": 1000000, "advanceAmount": 990000, "dueDate": 1785803102, "status": "Settled" }
+  },
+  "finalAccounting": {
+    "accountedCash": 2430000,
+    "actualCash": 2430000,
+    "accountedAssets": 2430000,
+    "netLiquidityContributed": 3000000,
+    "totalAdvancePrincipal": 2970000,
+    "totalSettledFaceValue": 2000000,
+    "totalDefaultRecoveries": 400000,
+    "totalRealizedProfit": 20000,
+    "totalRealizedLoss": 590000,
+    "totalContractualShortfall": 600000,
+    "outstandingPrincipal": 0,
+    "outstandingFaceValue": 0,
+    "platformExposure": 0,
+    "remainingReserve": 0,
+    "platformStatus": "Paused",
+    "cashReconciled": true,
+    "reserveCashReconciled": true
+  },
+  "observedBalances": {
+    "observedAfterBlock": 55174588,
+    "ownerNativeRaw": "7339741614062000000",
+    "workerNativeRaw": "4937924594000000000",
+    "ownerUsdcRaw": 7339741,
+    "workerUsdcRaw": 4937924,
+    "vaultUsdcRaw": 2430000,
+    "registryUsdcRaw": 0
+  },
+  "sourceVerification": {
+    "PlatformRegistry": "Pass - Verified",
+    "EarningsManager": "Pass - Verified",
+    "AdvanceVaultV2": "Pass - Verified"
+  }
+}
