@@ -7,8 +7,8 @@ export class OperationStore {
     this.operations = new Map();
   }
 
-  create(values) {
-    const id = randomUUID();
+  create(values, requestedId = null) {
+    const id = requestedId ?? randomUUID();
     const operation = {
       id,
       createdAt: this.now(),
@@ -19,6 +19,19 @@ export class OperationStore {
     };
     this.operations.set(id, operation);
     return operation;
+  }
+
+  restore(operation) {
+    if (!operation?.id || this.operations.has(operation.id)) return this.operations.get(operation?.id) ?? null;
+    const restored = {
+      createdAt: this.now(),
+      expiresAt: this.now() + this.ttlMs,
+      status: "challenge_required",
+      transactionId: null,
+      ...operation,
+    };
+    this.operations.set(restored.id, restored);
+    return restored;
   }
 
   get(id, sessionId) {

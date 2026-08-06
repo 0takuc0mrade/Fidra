@@ -18,6 +18,7 @@ import {
 } from "@phosphor-icons/react";
 
 export const navItems = [
+  { label: "Try Fidra", icon: ArrowRight, route: "/try", section: "Fidra V1" },
   { label: "Worker payouts", icon: Lightning, route: "/worker", section: "Fidra V1" },
   { label: "Platform", icon: Buildings, route: "/platform", section: "Fidra V1" },
   { label: "Overview", icon: SquaresFour, route: "/overview", section: "Legacy V0" },

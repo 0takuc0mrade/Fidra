@@ -58,4 +58,13 @@ export class WalletStore {
     await this.writeAll(data);
     return data.wallets[walletId];
   }
+
+  async dailyConfirmedSeedTotal(date = new Date().toISOString().slice(0, 10)) {
+    const data = await this.readAll();
+    return Object.values(data.wallets).reduce((total, wallet) => {
+      const seed = wallet.gasSeed;
+      if (seed?.status !== "confirmed" || !seed.recordedAt?.startsWith(date)) return total;
+      return total + Number(seed.amountUsdc || 0);
+    }, 0);
+  }
 }

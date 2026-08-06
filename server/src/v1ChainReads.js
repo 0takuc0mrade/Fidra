@@ -5,6 +5,7 @@ import {
   defineChain,
   getAddress,
   http,
+  parseAbiItem,
 } from "viem";
 import { CLAIM_STATUS, PURCHASE_STATUS, sameAddress } from "./workerAdvance.js";
 
@@ -245,5 +246,20 @@ export class V1ChainReads {
       claim,
       purchase,
     };
+  }
+
+  async recoverWorkerAdvance(expected) {
+    const client = await this.client();
+    const event = parseAbiItem("event AdvancePurchased(uint256 indexed claimId, uint256 indexed platformId, address indexed worker, uint256 faceValue, uint256 advanceAmount, uint256 fee)");
+    const logs = await client.getLogs({
+      address: this.config.v1AdvanceVaultAddress,
+      event,
+      args: { claimId: BigInt(expected.claimId), worker: getAddress(expected.worker) },
+      fromBlock: BigInt(expected.quotedAtBlock),
+      toBlock: "latest",
+    });
+    const match = logs.at(-1);
+    if (!match?.transactionHash) throw new ArcVerificationPendingError();
+    return this.verifyWorkerAdvance(match.transactionHash, expected);
   }
 }

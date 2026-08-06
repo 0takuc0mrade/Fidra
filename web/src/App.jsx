@@ -9,13 +9,14 @@ import Overview from "./pages/Overview.jsx";
 import VendorOnboarding from "./pages/VendorOnboarding.jsx";
 import WorkerPayout from "./pages/WorkerPayout.jsx";
 import PlatformConsole from "./pages/PlatformConsole.jsx";
+import TryFidra from "./pages/TryFidra.jsx";
 import { FIDRA_MODE_STORAGE_KEY, fidraConfig } from "./lib/config.js";
 
 const demoMandateRoute = "/mandates/1042";
 const liveEvidenceRoute = `/mandates/${fidraConfig.liveEvidenceMandateId}`;
 const staticRoutes = new Set([
-  "/", "/worker", "/worker/claims", "/platform", "/platform/claims", "/platform/claims/new",
-  "/platform/batches", "/platform/settlements", "/overview", demoMandateRoute,
+  "/", "/try", "/worker", "/worker/claims", "/platform", "/platform/claims", "/platform/claims/new",
+  "/platform/batches", "/platform/settlements", "/platform/evidence", "/overview", demoMandateRoute,
   liveEvidenceRoute, "/claims", "/activity", "/vendor-onboarding",
 ]);
 
@@ -129,7 +130,7 @@ function App() {
     : route.startsWith("/worker") ? "/worker"
       : route.startsWith("/platform") ? "/platform" : route;
   const liveUnindexedPage = !fidraConfig.demoMode && liveUnindexedRoutes[route];
-  const isV1Route = route.startsWith("/worker") || route.startsWith("/platform");
+  const isV1Route = route === "/try" || route.startsWith("/worker") || route.startsWith("/platform");
 
   if (route === "/") {
     return <Landing navigate={navigate} theme={theme} toggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} toggleDataMode={toggleDataMode} />;
@@ -202,6 +203,7 @@ function App() {
               <WorkerPayout claimId={workerClaimId(route)} navigate={navigate} showNotice={showNotice} />
             )}
             {route.startsWith("/platform") && <PlatformConsole route={route} navigate={navigate} />}
+            {route === "/try" && <TryFidra showNotice={showNotice} />}
           </>
         )}
       </main>

@@ -66,6 +66,14 @@ function statsRecord(raw) {
   return Object.fromEntries(fields.map((field, index) => [field, asBigInt(raw?.[field] ?? raw?.[index])]));
 }
 
+function eventReceipt(event) {
+  return event?.transactionHash ? {
+    transactionHash: event.transactionHash,
+    blockNumber: event.blockNumber,
+    explorerUrl: `${fidraConfig.blockExplorerUrl}/tx/${event.transactionHash}`,
+  } : null;
+}
+
 async function assertLiveV1() {
   const configuration = getV1AddressConfiguration();
   if (!configuration.configured) throw new Error(`V1 live mode is missing ${configuration.missing.join(", ")}.`);
@@ -113,7 +121,7 @@ export async function loadV1Dashboard(platformId = fidraConfig.v1LivePlatformId)
   const addresses = await assertLiveV1();
   const blockNumber = await publicClient.getBlockNumber();
   const block = await publicClient.getBlock({ blockNumber });
-  const [rawPlatform, rawStats, registryCode, earningsCode, vaultCode] = await Promise.all([
+  const [rawPlatform, rawStats, claimEvents, advanceEvents, settlementEvents, defaultEvents, registryCode, earningsCode, vaultCode] = await Promise.all([
     publicClient.readContract({
       address: addresses.v1PlatformRegistry,
       abi: platformRegistryAbi,
@@ -127,17 +135,34 @@ export async function loadV1Dashboard(platformId = fidraConfig.v1LivePlatformId)
       functionName: "vaultStats",
       blockNumber,
     }),
+    publicClient.getContractEvents({
+      address: addresses.v1EarningsManager,
+      abi: earningsManagerAbi,
+      eventName: "ClaimCreated",
+      args: { platformId: BigInt(platformId) },
+      fromBlock: BigInt(deploymentEvidence.contracts.EarningsManager.deploymentBlock),
+      toBlock: blockNumber,
+    }),
+    publicClient.getContractEvents({ address: addresses.v1AdvanceVault, abi: advanceVaultV2Abi, eventName: "AdvancePurchased", args: { platformId: BigInt(platformId) }, fromBlock: BigInt(deploymentEvidence.contracts.AdvanceVaultV2.deploymentBlock), toBlock: blockNumber }),
+    publicClient.getContractEvents({ address: addresses.v1AdvanceVault, abi: advanceVaultV2Abi, eventName: "ClaimSettledEvent", args: { platformId: BigInt(platformId) }, fromBlock: BigInt(deploymentEvidence.contracts.AdvanceVaultV2.deploymentBlock), toBlock: blockNumber }),
+    publicClient.getContractEvents({ address: addresses.v1AdvanceVault, abi: advanceVaultV2Abi, eventName: "DefaultTriggered", args: { platformId: BigInt(platformId) }, fromBlock: BigInt(deploymentEvidence.contracts.AdvanceVaultV2.deploymentBlock), toBlock: blockNumber }),
     publicClient.getBytecode({ address: addresses.v1PlatformRegistry, blockNumber }),
     publicClient.getBytecode({ address: addresses.v1EarningsManager, blockNumber }),
     publicClient.getBytecode({ address: addresses.v1AdvanceVault, blockNumber }),
   ]);
-  const claimIds = Object.keys(deploymentEvidence.claims).map(Number);
+  const claimIds = [...new Set(claimEvents.map((event) => Number(event.args.claimId)))].slice(-250);
   const claims = await Promise.all(claimIds.map(async (claimId) => {
     const record = await loadV1Claim(claimId, { blockNumber });
     return {
       ...record.claim,
       purchase: record.purchase,
-      purpose: deploymentEvidence.claims[String(claimId)].purpose,
+      purpose: deploymentEvidence.claims[String(claimId)]?.purpose ?? "Live platform claim",
+      receipts: {
+        created: eventReceipt(claimEvents.find((event) => Number(event.args.claimId) === claimId)),
+        advanced: eventReceipt(advanceEvents.find((event) => Number(event.args.claimId) === claimId)),
+        resolved: eventReceipt(settlementEvents.find((event) => Number(event.args.claimId) === claimId)
+          ?? defaultEvents.find((event) => Number(event.args.claimId) === claimId)),
+      },
     };
   }));
   return {

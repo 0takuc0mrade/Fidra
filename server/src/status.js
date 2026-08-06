@@ -36,6 +36,18 @@ export function createCircleStatus(config, lastError = null) {
       amountUsdc: String(config.seedAmountUsdc),
       maximumUsdc: String(config.maxSeedAmountUsdc),
       oncePerWallet: config.seedOncePerWallet,
+      dailyBudgetUsdc: String(config.seedDailyBudgetUsdc),
+      reserveFloorUsdc: String(config.seedWalletReserveUsdc),
+    },
+    sandbox: {
+      writesEnabled: config.sandboxWritesEnabled,
+      configured: config.sandboxWritesEnabled
+        && Boolean(config.sandboxPlatformPrivateKey)
+        && config.sandboxPlatformId > 2,
+      platformId: config.sandboxPlatformId || null,
+      claimFaceValueUnits: config.sandboxClaimFaceValue,
+      maximumClaimFaceValueUnits: config.sandboxMaxClaimFaceValue,
+      feeBps: 100,
     },
     transactions: {
       buyClaim: walletStatus === "configured" ? "user_approval_required" : walletStatus,

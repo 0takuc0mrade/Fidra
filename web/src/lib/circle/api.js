@@ -52,4 +52,9 @@ export const circleApi = Object.freeze({
     { method: "POST", body: { transactionId } },
   ),
   purchaseAdvanceStatus: (operationId) => request(`/api/circle/worker/transactions/${encodeURIComponent(operationId)}`),
+  demoWorkflow: () => request("/api/demo/workflow"),
+  startDemoWorkflow: () => request("/api/demo/workflow", { method: "POST", body: {} }),
+  seedDemoGas: () => request("/api/demo/workflow/gas", { method: "POST", body: {} }),
+  completeDemoTask: () => request("/api/demo/workflow/task", { method: "POST", body: {} }),
+  settleDemo: () => request("/api/demo/workflow/settle", { method: "POST", body: {} }),
 });

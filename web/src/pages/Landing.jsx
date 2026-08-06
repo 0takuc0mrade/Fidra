@@ -15,7 +15,7 @@ function FidraLandingMark() {
 }
 
 function Landing({ navigate, theme, toggleTheme, toggleDataMode }) {
-  const defaultAppRoute = fidraConfig.demoMode ? "/overview" : `/mandates/${fidraConfig.liveEvidenceMandateId}`;
+  const defaultAppRoute = "/try";
   const openControlPlane = () => navigate(defaultAppRoute);
 
   return (
@@ -35,7 +35,7 @@ function Landing({ navigate, theme, toggleTheme, toggleDataMode }) {
               <span>Open app</span>
             </button>
             <div className="landing-tags-pill landing-desktop-only" aria-label="Product categories">
-              <span>Locked receivables</span><span>Arc + USDC</span>
+              <span>Certified earnings</span><span>Circle + Arc</span>
             </div>
           </div>
           <div className="landing-nav-side landing-right-control">
@@ -46,7 +46,7 @@ function Landing({ navigate, theme, toggleTheme, toggleDataMode }) {
               <button className="landing-circle landing-circle-dark" type="button" aria-label="Open Fidra control plane" onClick={openControlPlane}>
                 <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="5" cy="5" r="1.4" /><circle cx="11" cy="5" r="1.4" /><circle cx="5" cy="11" r="1.4" /><circle cx="11" cy="11" r="1.4" /></svg>
               </button>
-              <span className="landing-desktop-only">USDC working capital</span>
+              <span className="landing-desktop-only">Instant worker payouts</span>
             </div>
             <button
               className="landing-circle landing-theme-toggle"
@@ -81,18 +81,18 @@ function Landing({ navigate, theme, toggleTheme, toggleDataMode }) {
         >
           <div className="landing-copy">
             <motion.p className="landing-kicker" initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.6, duration: 0.8, ease }}>
-              <span />Receivables infrastructure for agentic commerce
+              <span />Embedded payouts for irregular work
             </motion.p>
             <motion.h1 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.8, duration: 0.8, ease }}>
-              Approved claims.<br />Instant USDC.
+              Certified earnings.<br />Paid now.
             </motion.h1>
             <motion.div className="landing-actions" initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 1, duration: 0.8, ease }}>
-              <button className="landing-cta landing-cta-primary" type="button" onClick={openControlPlane}>Open control plane</button>
-              <button className="landing-cta landing-cta-secondary" type="button" onClick={() => navigate(defaultAppRoute)}>How Fidra works</button>
+              <button className="landing-cta landing-cta-primary" type="button" onClick={openControlPlane}>Try Fidra</button>
+              <button className="landing-cta landing-cta-secondary" type="button" onClick={() => navigate("/platform")}>Platform console</button>
             </motion.div>
           </div>
           <div className="landing-footer-tags">
-            <span>Mandates</span><span>Irrevocable claims</span><span>Vendor advances</span>
+            <span>Circle-controlled wallet</span><span>Certified work</span><span>Platform settlement</span>
           </div>
         </motion.footer>
       </div>

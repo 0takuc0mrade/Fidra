@@ -9,6 +9,7 @@ import {
   settlePlatformClaim,
 } from "../lib/v1/platformActions.js";
 import { loadV1Dashboard } from "../lib/v1/liveV1Data.js";
+import { fidraConfig } from "../lib/config.js";
 import { availablePlatformCredit, platformCapabilities } from "../lib/v1/platformPolicy.js";
 
 const emptyClaim = Object.freeze({ worker: "", faceValue: "", dueDate: "", taskReference: "", evidenceReference: "" });
@@ -40,6 +41,7 @@ function PlatformTabs({ route, navigate }) {
     ["/platform/claims/new", "New claim"],
     ["/platform/batches", "Batch certification"],
     ["/platform/settlements", "Settlements"],
+    ["/platform/evidence", "V1.1 failure evidence"],
   ];
   return <nav className="v1-tabs" aria-label="Platform sections">{tabs.map(([path, label]) => <button className={route === path ? "is-active" : ""} type="button" key={path} onClick={() => navigate(path)}>{label}</button>)}</nav>;
 }
@@ -59,7 +61,13 @@ function PlatformClaims({ claims, title = "V1 earnings claims" }) {
             <span role="cell" data-label="Face value">{formatUsdc(claim.faceValue)} USDC</span>
             <span role="cell" data-label="Due">{formatTimestamp(claim.dueDate)}</span>
             <span role="cell" data-label="Claim status"><StatusBadge state={claim.status} /></span>
-            <span role="cell" data-label="Advance">{claim.purchase.status === "None" ? "Not purchased" : `${claim.purchase.status} · ${formatUsdc(claim.purchase.advanceAmount)} USDC`}</span>
+            <span role="cell" data-label="Advance">{claim.purchase.status === "None" ? "Not purchased" : `${claim.purchase.status} · ${formatUsdc(claim.purchase.advanceAmount)} USDC`}
+              <span className="v1-row-receipts">
+                {claim.receipts?.created && <a href={claim.receipts.created.explorerUrl} target="_blank" rel="noreferrer">Created <ArrowSquareOut /></a>}
+                {claim.receipts?.advanced && <a href={claim.receipts.advanced.explorerUrl} target="_blank" rel="noreferrer">Advance <ArrowSquareOut /></a>}
+                {claim.receipts?.resolved && <a href={claim.receipts.resolved.explorerUrl} target="_blank" rel="noreferrer">Resolved <ArrowSquareOut /></a>}
+              </span>
+            </span>
           </div>
         ))}
       </div>
@@ -181,11 +189,12 @@ function SettlementForm({ platform, claims, refresh }) {
 export default function PlatformConsole({ route, navigate }) {
   const [dashboard, setDashboard] = useState(null);
   const [state, setState] = useState({ loading: true, error: "" });
+  const platformId = route === "/platform/evidence" ? 1 : fidraConfig.v1LivePlatformId;
   const load = useCallback(async () => {
     setState({ loading: true, error: "" });
-    try { setDashboard(await loadV1Dashboard()); setState({ loading: false, error: "" }); }
+    try { setDashboard(await loadV1Dashboard(platformId)); setState({ loading: false, error: "" }); }
     catch (error) { setState({ loading: false, error: error.message }); }
-  }, []);
+  }, [platformId]);
   useEffect(() => { void load(); }, [load]);
   const resolvedRoute = useMemo(() => route === "/platform" ? "/platform" : route, [route]);
   return (
@@ -198,13 +207,14 @@ export default function PlatformConsole({ route, navigate }) {
       {dashboard && route === "/platform" && (
         <div className="v1-platform-overview">
           <PlatformClaims claims={dashboard.claims} title="Recent protocol evidence" />
-          <section className="v1-operating-note"><h2>Current operating state</h2><p>Platform 1 is paused because the controlled smoke test exercised a reserve-backed default. This is live evidence of the risk control. Existing obligations remain repayable; new certification and exposure are blocked until governance unpauses the platform and reserve is restored.</p><dl><div><dt>Settlement wallet</dt><dd><code>{truncateHex(dashboard.platform.settlementWallet, 12, 10)}</code></dd></div><div><dt>Last read</dt><dd>Block {dashboard.blockNumber.toString()}</dd></div></dl></section>
+          <section className="v1-operating-note"><h2>Current operating state</h2><p>{dashboard.platform.active ? `Platform ${dashboard.platform.id} is active. Authorized platform users may create and certify earnings; purchased claims remain platform settlement obligations.` : `Platform ${dashboard.platform.id} is paused. New certification and exposure are blocked, while existing obligations remain repayable.`}</p><dl><div><dt>Settlement wallet</dt><dd><code>{truncateHex(dashboard.platform.settlementWallet, 12, 10)}</code></dd></div><div><dt>Last read</dt><dd>Block {dashboard.blockNumber.toString()}</dd></div></dl></section>
         </div>
       )}
       {dashboard && route === "/platform/claims" && <PlatformClaims claims={dashboard.claims} />}
       {dashboard && route === "/platform/claims/new" && <SingleClaimForm platform={dashboard.platform} refresh={load} />}
       {dashboard && route === "/platform/batches" && <BatchForm platform={dashboard.platform} refresh={load} />}
       {dashboard && route === "/platform/settlements" && <SettlementForm platform={dashboard.platform} claims={dashboard.claims} refresh={load} />}
+      {dashboard && route === "/platform/evidence" && <><PlatformClaims claims={dashboard.claims} title="Read-only V1.1 failure evidence" /><section className="v1-operating-note"><h2>Reserve-backed default proof</h2><p>Claim 4 defaulted after its due date, drew the remaining reserve, recorded realized loss and contractual shortfall, and automatically paused platform 1. Claim 5 then proved that a paused platform can still settle an existing obligation. This route exposes no mutation controls.</p></section></>}
     </>
   );
 }

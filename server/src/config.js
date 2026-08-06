@@ -10,6 +10,7 @@ const DEFAULTS = Object.freeze({
   v1PlatformRegistryAddress: "0x20EcB05d90D4F24F8Fcf2785BdE240796B8b1af3",
   v1EarningsManagerAddress: "0xdC1C359fC174Fb8C7cDcbE0e09447d123dD9cD57",
   v1AdvanceVaultAddress: "0x12604e5acD074D3499C9ac4D2cbb4Bd39ECE49c5",
+  protocolOwnerAddress: "0xeC68c705001a158d0f810182Ca205887679E33f5",
 });
 
 function booleanValue(value, fallback = false) {
@@ -47,8 +48,9 @@ export function createConfig(env = process.env) {
   const walletsEnabled = booleanValue(env.CIRCLE_WALLETS_ENABLED, false);
   const mockMode = booleanValue(env.CIRCLE_MOCK_MODE, false);
   const gasSeedEnabled = booleanValue(env.WORKER_GAS_SEED_ENABLED ?? env.VENDOR_GAS_SEED_ENABLED, false);
-  const seedAmountUsdc = positiveNumber(env.WORKER_GAS_SEED_USDC ?? env.VENDOR_GAS_SEED_USDC, 0.1);
-  const maxSeedAmountUsdc = positiveNumber(env.MAX_WORKER_GAS_SEED_USDC ?? env.MAX_VENDOR_GAS_SEED_USDC, 0.2);
+  const seedAmountUsdc = positiveNumber(env.WORKER_GAS_SEED_USDC ?? env.VENDOR_GAS_SEED_USDC, 0.04);
+  const maxSeedAmountUsdc = positiveNumber(env.MAX_WORKER_GAS_SEED_USDC ?? env.MAX_VENDOR_GAS_SEED_USDC, 0.05);
+  const sandboxWritesEnabled = booleanValue(env.SANDBOX_WRITES_ENABLED, false);
   const walletMissingKeys = [
     ["CIRCLE_API_KEY", env.CIRCLE_API_KEY],
     ["CIRCLE_APP_ID", env.CIRCLE_APP_ID],
@@ -59,6 +61,8 @@ export function createConfig(env = process.env) {
   const configurationErrors = [];
   if (mockMode) configurationErrors.push("CIRCLE_MOCK_MODE is not supported because Fidra does not fabricate Circle success states.");
   if (seedAmountUsdc > maxSeedAmountUsdc) configurationErrors.push("WORKER_GAS_SEED_USDC exceeds MAX_WORKER_GAS_SEED_USDC.");
+  if (sandboxWritesEnabled && !env.SANDBOX_PLATFORM_PRIVATE_KEY?.trim()) configurationErrors.push("SANDBOX_PLATFORM_PRIVATE_KEY is required when sandbox writes are enabled.");
+  if (sandboxWritesEnabled && !positiveInteger(env.SANDBOX_PLATFORM_ID, 0)) configurationErrors.push("SANDBOX_PLATFORM_ID is required when sandbox writes are enabled.");
 
   return Object.freeze({
     port: positiveInteger(env.PORT, 8787),
@@ -76,6 +80,8 @@ export function createConfig(env = process.env) {
     seedAmountUsdc,
     maxSeedAmountUsdc,
     seedOncePerWallet: booleanValue(env.SEED_ONCE_PER_WALLET, true),
+    seedDailyBudgetUsdc: positiveNumber(env.WORKER_GAS_DAILY_BUDGET_USDC, 2),
+    seedWalletReserveUsdc: positiveNumber(env.WORKER_GAS_WALLET_RESERVE_USDC, 0.2),
     seedMissingKeys,
     gasSeedConfigured: gasSeedEnabled && seedMissingKeys.length === 0 && seedAmountUsdc <= maxSeedAmountUsdc,
     configurationErrors,
@@ -89,6 +95,18 @@ export function createConfig(env = process.env) {
     v1PlatformRegistryAddress: addressValue(env.V1_PLATFORM_REGISTRY_ADDRESS, DEFAULTS.v1PlatformRegistryAddress),
     v1EarningsManagerAddress: addressValue(env.V1_EARNINGS_MANAGER_ADDRESS, DEFAULTS.v1EarningsManagerAddress),
     v1AdvanceVaultAddress: addressValue(env.V1_ADVANCE_VAULT_ADDRESS, DEFAULTS.v1AdvanceVaultAddress),
+    v1DeploymentBlock: positiveInteger(env.V1_DEPLOYMENT_BLOCK, 55_168_614),
+    protocolOwnerAddress: addressValue(env.PROTOCOL_OWNER_ADDRESS, DEFAULTS.protocolOwnerAddress),
+    sandboxWritesEnabled,
+    sandboxPlatformId: positiveInteger(env.SANDBOX_PLATFORM_ID, 0),
+    sandboxPlatformPrivateKey: env.SANDBOX_PLATFORM_PRIVATE_KEY?.trim() || "",
+    sandboxClaimFaceValue: positiveInteger(env.SANDBOX_CLAIM_FACE_VALUE_UNITS, 100_000),
+    sandboxMaxClaimFaceValue: positiveInteger(env.SANDBOX_MAX_CLAIM_FACE_VALUE_UNITS, 100_000),
+    sandboxClaimDueSeconds: positiveInteger(env.SANDBOX_CLAIM_DUE_SECONDS, 7 * 86_400),
+    sandboxGlobalBudgetUsdc: positiveNumber(env.SANDBOX_GLOBAL_BUDGET_USDC, 10),
+    sandboxMaxCreditLimit: positiveInteger(env.SANDBOX_MAX_CREDIT_LIMIT_UNITS, 1_000_000),
+    sandboxMinReserve: positiveInteger(env.SANDBOX_MIN_RESERVE_UNITS, 100_000),
+    sandboxRequestLimit: positiveInteger(env.SANDBOX_REQUESTS_PER_MINUTE, 12),
     arcVerificationTimeoutMs: positiveInteger(env.ARC_VERIFICATION_TIMEOUT_SECONDS, 120) * 1000,
     sessionTtlMs: positiveInteger(env.SESSION_TTL_SECONDS, 86_400) * 1000,
     secureCookies: booleanValue(env.SESSION_COOKIE_SECURE, env.NODE_ENV === "production"),
@@ -96,6 +114,8 @@ export function createConfig(env = process.env) {
     metadataFile: env.WORKER_WALLET_METADATA_FILE?.trim()
       || env.VENDOR_WALLET_METADATA_FILE?.trim()
       || new URL("../data/worker-wallets.json", import.meta.url),
+    demoWorkflowFile: env.DEMO_WORKFLOW_FILE?.trim()
+      || new URL("../data/demo-workflows.json", import.meta.url),
   });
 }
 

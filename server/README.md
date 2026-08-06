@@ -79,3 +79,25 @@ This repository never infers live confirmation from implementation or configurat
 The `/api/circle/vendor/*` routes remain unchanged for historical V0 evidence, including Legacy `buyClaim`. They are not the current Fidra product path. `submit-proof` and `request-spend` remain honest `501 not_implemented` stubs.
 
 The optional gas seeder transfers Arc native testnet USDC only for transaction fees. It grants no protocol role and is disabled by default. Principal payouts continue to use the 6-decimal ERC-20 USDC contract.
+
+## V1.4 self-service demo
+
+`/try` uses durable, ignored `0600` workflow records and four bounded endpoints:
+
+- `GET|POST /api/demo/workflow`
+- `POST /api/demo/workflow/gas`
+- `POST /api/demo/workflow/task`
+- `POST /api/demo/workflow/settle`
+
+The public API accepts no wallet destination, platform ID, amount, target,
+calldata or transfer value. The exact Circle session wallet is the gas recipient
+and claim worker. The configured sandbox platform signer is limited in code to a
+fixed platform ID, fixed 0.10-USDC claim, certification of its own new claim,
+exact USDC approval and settlement. Claim IDs 1–6 and platform IDs 1–2 are
+rejected by the sandbox service.
+
+Before enabling writes, register a fresh Arc Testnet platform to a dedicated
+settlement key, fund its reserve through the one-time owner path, fund that
+settlement wallet for one exact settlement, and configure a separate gas-funder
+key. Review `docs/V1_4_ARCHITECTURE.md`; never use the protocol-owner key for
+either runtime signer.

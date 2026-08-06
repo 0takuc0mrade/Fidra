@@ -110,6 +110,28 @@ Excluded from V1.2:
 - LP shares, withdrawal liabilities, or yield distribution; and
 - cross-chain settlement.
 
+## V1.3 live Circle proof
+
+V1.3 completed a real Circle-controlled worker advance and platform settlement
+on Arc Testnet. Claim 6 paid 0.99 USDC gross to the exact Circle worker, then
+settled for 1.00 USDC. Arc receipts, claim state, exposure and vault accounting
+were independently reconciled; the worker was never a settlement payer.
+
+## V1.4 self-service testnet experience
+
+V1.4 adds `/try`: Circle email login, exact-wallet gas preparation, one bounded
+demo task, certified 0.10-USDC earnings, worker-approved 0.099-USDC advance,
+independent Arc verification, automatic platform settlement and a durable receipt
+timeline. The workflow is idempotent across refreshes and server restarts and
+recovers a successful Arc advance even when Circle status polling times out.
+
+Sandbox writes and gas funding are disabled by default. Enabling them requires
+two fresh dedicated testnet keys, a fresh platform ID greater than 2, one-time
+owner bootstrap and a separate controlled live-browser test. See the
+[terminal-action audit](docs/V1_4_TERMINAL_ACTION_AUDIT.md),
+[architecture](docs/V1_4_ARCHITECTURE.md), and
+[live runbook](docs/V1_4_LIVE_RUNBOOK.md).
+
 ## Repository structure
 
 ```text
