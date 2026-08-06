@@ -2,6 +2,8 @@ import { formatUnits, parseUnits } from "viem";
 import {
   MANDATE_STATUS_LABELS,
   REQUEST_STATUS_LABELS,
+  EARNINGS_CLAIM_STATUS_LABELS,
+  PURCHASE_STATUS_LABELS,
 } from "../../../../shared/types.js";
 import { USDC_DECIMALS } from "../../../../shared/constants.js";
 
@@ -49,6 +51,14 @@ export function mandateStatusLabel(value, expiresAt) {
 
 export function requestStatusLabel(value) {
   return REQUEST_STATUS_LABELS[Number(value)] ?? "Unknown";
+}
+
+export function earningsClaimStatusLabel(value) {
+  return EARNINGS_CLAIM_STATUS_LABELS[Number(value)] ?? "Unknown";
+}
+
+export function purchaseStatusLabel(value) {
+  return PURCHASE_STATUS_LABELS[Number(value)] ?? "Unknown";
 }
 
 export function formatTimestamp(value, fallback = "Not set") {

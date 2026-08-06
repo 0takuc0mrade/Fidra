@@ -49,7 +49,7 @@ test("existing-user wallet creation also explicitly requests an Arc Testnet EOA"
 
   assert.equal(requestBody.accountType, "EOA");
   assert.deepEqual(requestBody.blockchains, ["ARC-TESTNET"]);
-  assert.deepEqual(requestBody.metadata, [{ name: "Fidra vendor", refId: "vendor-ref" }]);
+  assert.deepEqual(requestBody.metadata, [{ name: "Fidra worker", refId: "vendor-ref" }]);
 });
 
 test("an invalid gas seed cap does not misreport a valid Circle wallet configuration", () => {

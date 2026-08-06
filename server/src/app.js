@@ -11,10 +11,14 @@ import {
 import { GasSeedError, GasSeedService } from "./seedService.js";
 import { WalletStore } from "./walletStore.js";
 import { ChainReads, computeAdvance, sameAddress } from "./chainReads.js";
+import { OperationStore } from "./operationStore.js";
+import { ArcVerificationPendingError, V1ChainReads } from "./v1ChainReads.js";
+import { WorkerAdvanceError, validateWorkerAdvance } from "./workerAdvance.js";
 
 const MAX_BODY_BYTES = 32_768;
 const TRANSACTION_STUB_MESSAGE = "Circle wallet transaction execution is not implemented yet.";
 const BUY_CLAIM_ABI_SIGNATURE = "buyClaim(uint256,uint256,uint256)";
+const PURCHASE_ADVANCE_ABI_SIGNATURE = "purchaseAdvance(uint256)";
 
 // Maps a Circle user-controlled transaction state to an honest Fidra UI state.
 // A confirmed hash is surfaced only when Circle reports terminal success with a txHash.
@@ -126,6 +130,8 @@ export function createApp(config, overrides = {}) {
   const circleClient = overrides.circleClient ?? new CircleClient(config);
   const gasSeedService = overrides.gasSeedService ?? new GasSeedService(config, walletStore);
   const chainReads = overrides.chainReads ?? new ChainReads(config);
+  const v1ChainReads = overrides.v1ChainReads ?? new V1ChainReads(config);
+  const operationStore = overrides.operationStore ?? new OperationStore();
   let lastCircleError = null;
 
   async function loadWallet(session) {
@@ -158,7 +164,7 @@ export function createApp(config, overrides = {}) {
         return;
       }
 
-      if (route === "POST /api/circle/vendor/session/start") {
+      if (["POST /api/circle/vendor/session/start", "POST /api/circle/worker/session/start"].includes(route)) {
         if (!config.walletsConfigured) {
           json(response, 503, {
             status: "not_configured",
@@ -199,7 +205,7 @@ export function createApp(config, overrides = {}) {
         return;
       }
 
-      if (route === "POST /api/circle/vendor/session/complete") {
+      if (["POST /api/circle/vendor/session/complete", "POST /api/circle/worker/session/complete"].includes(route)) {
         const session = requireSession(request, response, sessionStore);
         if (!session) return;
         const body = await readJson(request);
@@ -215,19 +221,19 @@ export function createApp(config, overrides = {}) {
         return;
       }
 
-      if (route === "GET /api/circle/vendor/session/callback") {
+      if (["GET /api/circle/vendor/session/callback", "GET /api/circle/worker/session/callback"].includes(route)) {
         json(response, 200, { status: "ok", session: safeSession(requestSession(request, sessionStore)) }, headers);
         return;
       }
 
-      if (route === "POST /api/circle/vendor/session/logout") {
+      if (["POST /api/circle/vendor/session/logout", "POST /api/circle/worker/session/logout"].includes(route)) {
         const session = requestSession(request, sessionStore);
         sessionStore.delete(session?.id);
         json(response, 200, { status: "signed_out" }, { ...headers, "Set-Cookie": clearSessionCookie(config.secureCookies) });
         return;
       }
 
-      if (route === "GET /api/circle/vendor/wallet") {
+      if (["GET /api/circle/vendor/wallet", "GET /api/circle/worker/wallet"].includes(route)) {
         const session = requireSession(request, response, sessionStore, { authenticated: true });
         if (!session) return;
         const found = await loadWallet(session);
@@ -245,7 +251,7 @@ export function createApp(config, overrides = {}) {
         return;
       }
 
-      if (route === "POST /api/circle/vendor/wallet") {
+      if (["POST /api/circle/vendor/wallet", "POST /api/circle/worker/wallet"].includes(route)) {
         const session = requireSession(request, response, sessionStore, { authenticated: true });
         if (!session) return;
         const found = await loadWallet(session);
@@ -273,7 +279,7 @@ export function createApp(config, overrides = {}) {
           challenge = await circleClient.createWallet(
             session.userToken,
             idempotencyKey,
-            `fidra_vendor_${session.circleUserId}`.slice(0, 50),
+            `fidra_worker_${session.circleUserId}`.slice(0, 50),
           );
         }
         const challengeId = challenge.challengeId;
@@ -289,7 +295,7 @@ export function createApp(config, overrides = {}) {
         return;
       }
 
-      if (route === "POST /api/circle/vendor/seed-gas") {
+      if (["POST /api/circle/vendor/seed-gas", "POST /api/circle/worker/seed-gas"].includes(route)) {
         const session = requireSession(request, response, sessionStore, { authenticated: true });
         if (!session) return;
         const found = session.wallet ? { wallet: session.wallet, walletMetadata: session.walletMetadata } : await loadWallet(session);
@@ -308,6 +314,181 @@ export function createApp(config, overrides = {}) {
         const walletMetadata = await walletStore.get(found.wallet.id);
         sessionStore.update(session.id, { walletMetadata });
         json(response, 200, { status: seed.status, seed }, headers);
+        return;
+      }
+
+      if (route === "POST /api/circle/worker/transactions/purchase-advance") {
+        const session = requireSession(request, response, sessionStore, { authenticated: true });
+        if (!session) return;
+        if (!config.walletsConfigured) {
+          json(response, 503, {
+            status: "circle_not_configured",
+            error: "Circle User-Controlled Wallets are not configured for live worker payouts.",
+          }, headers);
+          return;
+        }
+        const found = session.wallet ? { wallet: session.wallet, walletMetadata: session.walletMetadata } : await loadWallet(session);
+        if (!found) {
+          json(response, 409, { status: "wallet_required", error: "Create an Arc Testnet EOA worker wallet first." }, headers);
+          return;
+        }
+        const { wallet } = found;
+        if (wallet.blockchain !== "ARC-TESTNET" || wallet.accountType !== "EOA" || !wallet.address) {
+          json(response, 409, { status: "wallet_invalid", error: "The worker wallet must be an Arc Testnet EOA." }, headers);
+          return;
+        }
+        const body = await readJson(request);
+        const claimId = Number(body.claimId);
+        if (!Number.isSafeInteger(claimId) || claimId <= 0) {
+          throw Object.assign(new Error("A positive integer claimId is required."), { status: 400 });
+        }
+        const snapshot = await v1ChainReads.getWorkerAdvanceSnapshot(claimId);
+        const quote = validateWorkerAdvance(snapshot, wallet.address, body.minimumAdvanceAmount);
+        const challenge = await circleClient.createContractExecutionChallenge(session.userToken, {
+          idempotencyKey: randomUUID(),
+          walletId: wallet.id,
+          contractAddress: config.v1AdvanceVaultAddress,
+          abiFunctionSignature: PURCHASE_ADVANCE_ABI_SIGNATURE,
+          abiParameters: [String(claimId)],
+          refId: `fidra_v1_advance_${claimId}`,
+        });
+        if (!challenge.challengeId) throw Object.assign(new Error("Circle did not return a transaction challenge."), { status: 502 });
+        const operation = operationStore.create({
+          sessionId: session.id,
+          challengeId: challenge.challengeId,
+          worker: wallet.address,
+          claimId: String(claimId),
+          platformId: snapshot.claim.platformId.toString(),
+          faceValue: snapshot.claim.faceValue.toString(),
+          advanceAmount: quote.advanceAmount.toString(),
+          feeAmount: quote.feeAmount.toString(),
+          minimumAdvanceAmount: quote.minimumAdvanceAmount.toString(),
+          advanceFeeBps: snapshot.platform.advanceFeeBps.toString(),
+          dueDate: snapshot.claim.dueDate.toString(),
+          quotedAtBlock: snapshot.blockNumber.toString(),
+        });
+        lastCircleError = null;
+        json(response, 200, {
+          status: "challenge_required",
+          operationId: operation.id,
+          challengeId: operation.challengeId,
+          claimId: operation.claimId,
+          platformId: operation.platformId,
+          worker: operation.worker,
+          faceValue: operation.faceValue,
+          advanceAmount: operation.advanceAmount,
+          feeAmount: operation.feeAmount,
+          minimumAdvanceAmount: operation.minimumAdvanceAmount,
+          advanceFeeBps: operation.advanceFeeBps,
+          dueDate: operation.dueDate,
+          quotedAtBlock: operation.quotedAtBlock,
+          contractAddress: config.v1AdvanceVaultAddress,
+        }, headers);
+        return;
+      }
+
+      const workerTransactionMatch = url.pathname.match(/^\/api\/circle\/worker\/transactions\/([^/]+)$/);
+      if (request.method === "POST" && workerTransactionMatch) {
+        const session = requireSession(request, response, sessionStore, { authenticated: true });
+        if (!session) return;
+        const operationId = decodeURIComponent(workerTransactionMatch[1]);
+        const body = await readJson(request);
+        const transactionId = body.transactionId?.trim();
+        if (!transactionId || transactionId.length > 200 || transactionId.includes("/")) {
+          throw Object.assign(new Error("A valid Circle transactionId is required."), { status: 400 });
+        }
+        const bound = operationStore.bind(operationId, session.id, transactionId);
+        if (bound === null) {
+          json(response, 404, { status: "operation_not_found", error: "The worker payout operation was not found." }, headers);
+          return;
+        }
+        if (bound === false) {
+          json(response, 409, { status: "transaction_mismatch", error: "This payout operation is already bound to a different Circle transaction." }, headers);
+          return;
+        }
+        json(response, 200, { status: "transaction_pending", operationId, transactionId }, headers);
+        return;
+      }
+
+      if (request.method === "GET" && workerTransactionMatch) {
+        const session = requireSession(request, response, sessionStore, { authenticated: true });
+        if (!session) return;
+        const operationId = decodeURIComponent(workerTransactionMatch[1]);
+        const operation = operationStore.get(operationId, session.id);
+        if (!operation) {
+          json(response, 404, { status: "operation_not_found", error: "The worker payout operation was not found." }, headers);
+          return;
+        }
+        if (operation.status === "transaction_timed_out") {
+          json(response, 200, { status: "transaction_timed_out", txHash: null, explorerUrl: null }, headers);
+          return;
+        }
+        if (!operation.transactionId) {
+          json(response, 200, { status: "awaiting_approval", txHash: null, explorerUrl: null }, headers);
+          return;
+        }
+        const transaction = await circleClient.getTransaction(session.userToken, operation.transactionId);
+        const circleState = String(transaction.state || "").toUpperCase();
+        if (["FAILED", "DENIED", "CANCELLED", "EXPIRED"].includes(circleState)) {
+          operationStore.update(operation.id, { status: "transaction_failed" });
+          json(response, 200, {
+            status: "transaction_failed",
+            circleState: transaction.state ?? null,
+            txHash: null,
+            explorerUrl: null,
+            errorReason: transaction.errorReason ?? "Circle rejected or failed the transaction.",
+          }, headers);
+          return;
+        }
+        if (!["COMPLETE", "CONFIRMED"].includes(circleState) || !transaction.txHash) {
+          json(response, 200, {
+            status: "transaction_pending",
+            circleState: transaction.state ?? null,
+            txHash: null,
+            explorerUrl: null,
+          }, headers);
+          return;
+        }
+
+        const firstCircleCompleteAt = operation.firstCircleCompleteAt ?? Date.now();
+        operationStore.update(operation.id, { firstCircleCompleteAt });
+        try {
+          const receipt = await v1ChainReads.verifyWorkerAdvance(transaction.txHash, operation);
+          operationStore.update(operation.id, { status: "transaction_confirmed", txHash: receipt.transactionHash });
+          json(response, 200, {
+            status: "transaction_confirmed",
+            circleState: transaction.state ?? null,
+            txHash: receipt.transactionHash,
+            explorerUrl: `${config.blockExplorerUrl}/tx/${receipt.transactionHash}`,
+            receipt: {
+              transactionHash: receipt.transactionHash,
+              blockNumber: receipt.blockNumber.toString(),
+              from: receipt.from,
+              to: receipt.to,
+            },
+          }, headers);
+        } catch (error) {
+          if (error instanceof ArcVerificationPendingError && Date.now() - firstCircleCompleteAt < config.arcVerificationTimeoutMs) {
+            json(response, 200, {
+              status: "transaction_pending",
+              circleState: transaction.state ?? null,
+              txHash: null,
+              explorerUrl: null,
+              verification: "waiting_for_arc",
+            }, headers);
+            return;
+          }
+          operationStore.update(operation.id, { status: "transaction_failed" });
+          json(response, 200, {
+            status: "transaction_failed",
+            circleState: transaction.state ?? null,
+            txHash: null,
+            explorerUrl: null,
+            errorReason: error instanceof ArcVerificationPendingError
+              ? "Arc verification timed out before the expected state change was confirmed."
+              : error.message,
+          }, headers);
+        }
         return;
       }
 
@@ -439,12 +620,15 @@ export function createApp(config, overrides = {}) {
           status: "error",
           error: "Circle request failed.",
           circleCode: error.code,
-          message: error.message,
         }, headers);
         return;
       }
       if (error instanceof GasSeedError) {
         json(response, error.status, { status: error.status === 503 ? "not_configured" : "error", error: error.message }, headers);
+        return;
+      }
+      if (error instanceof WorkerAdvanceError) {
+        json(response, error.status, { status: error.code, error: error.message, ...error.details }, headers);
         return;
       }
       json(response, error.status ?? 500, {

@@ -74,7 +74,7 @@ export class CircleClient {
     });
   }
 
-  createWallet(userToken, idempotencyKey, refId) {
+  createWallet(userToken, idempotencyKey, refId, metadataName = "Fidra worker") {
     return this.request("/v1/w3s/user/wallets", {
       method: "POST",
       userToken,
@@ -82,12 +82,12 @@ export class CircleClient {
         idempotencyKey,
         accountType: "EOA",
         blockchains: ["ARC-TESTNET"],
-        metadata: [{ name: "Fidra vendor", refId }],
+        metadata: [{ name: metadataName, refId }],
       },
     });
   }
 
-  /// @notice Creates a user-controlled contract-execution challenge the vendor must approve in the browser SDK.
+  /// @notice Creates a user-controlled contract-execution challenge the user must approve in Circle's browser SDK.
   createContractExecutionChallenge(userToken, { idempotencyKey, walletId, contractAddress, abiFunctionSignature, abiParameters, refId, feeLevel = "MEDIUM" }) {
     return this.request("/v1/w3s/user/transactions/contractExecution", {
       method: "POST",

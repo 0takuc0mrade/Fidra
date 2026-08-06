@@ -3,12 +3,12 @@ export function createCircleStatus(config, lastError = null) {
   const walletStatus = walletConfigurationError
     ? "error"
     : config.walletsConfigured ? "configured" : "not_configured";
-  const gasSeedStatus = config.configurationErrors.some((message) => message.includes("VENDOR_GAS_SEED"))
+  const gasSeedStatus = config.configurationErrors.some((message) => message.includes("WORKER_GAS_SEED"))
     ? "error"
     : config.gasSeedConfigured ? "configured" : "not_configured";
   const missingEnvKeys = [...new Set([
     ...(config.walletsEnabled ? config.walletMissingKeys : ["CIRCLE_WALLETS_ENABLED"]),
-    ...(config.gasSeedEnabled ? config.seedMissingKeys : ["VENDOR_GAS_SEED_ENABLED"]),
+    ...(config.gasSeedEnabled ? config.seedMissingKeys : ["WORKER_GAS_SEED_ENABLED"]),
   ])];
 
   return {
@@ -39,10 +39,12 @@ export function createCircleStatus(config, lastError = null) {
     },
     transactions: {
       buyClaim: walletStatus === "configured" ? "user_approval_required" : walletStatus,
+      purchaseAdvance: walletStatus === "configured" ? "user_approval_required" : walletStatus,
       submitProof: "not_implemented",
       requestSpend: "not_implemented",
-      contractAddress: config.advanceVaultAddress,
-      discountBps: config.advanceVaultDiscountBps,
+      legacyV0ContractAddress: config.advanceVaultAddress,
+      v1AdvanceVaultAddress: config.v1AdvanceVaultAddress,
+      v1QuoteSource: "platform_advance_fee_bps",
     },
     paymaster: { status: "not_configured", roadmap: "planned" },
     gateway: { status: "not_configured", roadmap: "planned" },
@@ -50,7 +52,7 @@ export function createCircleStatus(config, lastError = null) {
     missingEnvKeys,
     environment: config.circleEnvironment,
     chainId: config.arcChainId,
-    rpcUrl: config.arcRpcUrl,
+    rpc: config.arcRpcUrl ? "configured" : "not_configured",
     usdcAddress: config.usdcAddress,
     configurationErrors: config.configurationErrors,
     error: lastError ? "Circle request failed. Check server logs and configuration." : null,

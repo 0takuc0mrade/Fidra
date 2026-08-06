@@ -39,4 +39,17 @@ export const circleApi = Object.freeze({
   seedGas: () => request("/api/circle/vendor/seed-gas", { method: "POST", body: {} }),
   prepareBuyClaim: (body) => request("/api/circle/vendor/transactions/buy-claim", { method: "POST", body }),
   buyClaimStatus: (transactionId) => request(`/api/circle/vendor/transactions/${encodeURIComponent(transactionId)}`),
+  workerSession: () => request("/api/circle/worker/session/callback"),
+  startWorkerSession: (body) => request("/api/circle/worker/session/start", { method: "POST", body }),
+  completeWorkerSession: (body) => request("/api/circle/worker/session/complete", { method: "POST", body }),
+  logoutWorker: () => request("/api/circle/worker/session/logout", { method: "POST", body: {} }),
+  getWorkerWallet: () => request("/api/circle/worker/wallet"),
+  createWorkerWallet: () => request("/api/circle/worker/wallet", { method: "POST", body: {} }),
+  seedWorkerGas: () => request("/api/circle/worker/seed-gas", { method: "POST", body: {} }),
+  preparePurchaseAdvance: (body) => request("/api/circle/worker/transactions/purchase-advance", { method: "POST", body }),
+  bindPurchaseAdvance: (operationId, transactionId) => request(
+    `/api/circle/worker/transactions/${encodeURIComponent(operationId)}`,
+    { method: "POST", body: { transactionId } },
+  ),
+  purchaseAdvanceStatus: (operationId) => request(`/api/circle/worker/transactions/${encodeURIComponent(operationId)}`),
 });

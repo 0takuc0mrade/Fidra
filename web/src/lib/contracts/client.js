@@ -7,7 +7,13 @@ import {
   http,
 } from "viem";
 import { fidraConfig } from "../config.js";
-import { advanceVaultAbi, mandateManagerAbi } from "./abis.js";
+import {
+  advanceVaultAbi,
+  advanceVaultV2Abi,
+  earningsManagerAbi,
+  mandateManagerAbi,
+  platformRegistryAbi,
+} from "./abis.js";
 
 export const arcTestnet = defineChain({
   id: fidraConfig.chainId,
@@ -57,7 +63,7 @@ function findErrorData(error) {
 export function parseFidraError(error) {
   const data = findErrorData(error);
   if (data) {
-    for (const abi of [mandateManagerAbi, advanceVaultAbi]) {
+    for (const abi of [platformRegistryAbi, earningsManagerAbi, advanceVaultV2Abi, mandateManagerAbi, advanceVaultAbi]) {
       try {
         const decoded = decodeErrorResult({ abi, data });
         return {

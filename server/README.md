@@ -1,46 +1,81 @@
-# Fidra Circle wallet server
+# Fidra Circle worker server
 
-This service is the server-side boundary for Circle User-Controlled Wallet onboarding. It keeps the Circle API key and optional testnet seed signer out of the browser, stores its authenticated session only in ephemeral server memory, and persists only non-secret hackathon wallet metadata under `data/`. Circle's browser SDK necessarily receives short-lived user challenge credentials; Fidra keeps them in `sessionStorage` only until wallet creation/retrieval completes, then clears them.
+This service is the server-side boundary for Circle User-Controlled Wallet authentication and V1.1 worker-approved instant payouts. Circle API credentials remain server-side. Circle's browser SDK necessarily receives device-scoped challenge material in `sessionStorage`; Fidra never receives or stores a worker private key and never signs `purchaseAdvance` for a worker.
 
-The service is disabled by default. Copy `.env.example` to `.env`, configure the Circle User-Controlled Wallet application, and set `CIRCLE_WALLETS_ENABLED=true` only when the credentials are present. Google social login additionally requires `CIRCLE_GOOGLE_CLIENT_ID`. Email OTP requires SMTP configuration in the Circle Developer Console, which this service cannot detect.
+The service is disabled and fail-closed by default. With credentials absent, `GET /api/circle/status` reports `not_configured`, worker mutation endpoints return `circle_not_configured`, and no mock wallet, transaction hash, or receipt is substituted.
+
+## V1.1 targets
+
+- PlatformRegistry: `0x20EcB05d90D4F24F8Fcf2785BdE240796B8b1af3`
+- EarningsManager: `0xdC1C359fC174Fb8C7cDcbE0e09447d123dD9cD57`
+- AdvanceVaultV2: `0x12604e5acD074D3499C9ac4D2cbb4Bd39ECE49c5`
+- Arc Testnet: chain ID `5042002`
+- USDC: `0x3600000000000000000000000000000000000000`, 6 decimals
+
+The V0 vendor endpoints remain available only to preserve historical evidence. V1 worker modules use separate ABIs and addresses and do not import MandateManager or Legacy AdvanceVault.
+
+## Run locally
 
 ```bash
+cp .env.example .env
 npm install
 npm run dev
 ```
 
-The Vite development server proxies `/api` to `http://127.0.0.1:8787`. Do not expose this service directly without TLS, durable session storage, rate limiting, CSRF review, and an external secrets manager.
+The Vite development server proxies `/api` to `http://127.0.0.1:8787`. Do not expose this service publicly without TLS, a durable encrypted session store, rate limiting, CSRF review, monitoring, and an external secrets manager.
 
-The server requests `accountType: "EOA"` and `blockchains: ["ARC-TESTNET"]` on both user initialization and existing-user wallet creation. Authentication method does not select the account type. The exact returned EOA must be registered as Fidra's vendor and initial payee because the claim-sale path authorizes `msg.sender`.
-
-## Implemented API
+## Worker API
 
 - `GET /api/circle/status`
-- `POST /api/circle/vendor/session/start`
-- `POST /api/circle/vendor/session/complete`
-- `GET /api/circle/vendor/session/callback`
-- `POST /api/circle/vendor/session/logout`
-- `POST /api/circle/vendor/wallet`
-- `GET /api/circle/vendor/wallet`
-- `POST /api/circle/vendor/seed-gas`
-- `POST /api/circle/vendor/transactions/buy-claim` (prepares a user-approved `AdvanceVault.buyClaim` challenge)
-- `GET /api/circle/vendor/transactions/:id` (reads the real Circle transaction state; no fabricated receipts)
+- `POST /api/circle/worker/session/start`
+- `POST /api/circle/worker/session/complete`
+- `GET /api/circle/worker/session/callback`
+- `POST /api/circle/worker/session/logout`
+- `GET /api/circle/worker/wallet`
+- `POST /api/circle/worker/wallet`
+- `POST /api/circle/worker/seed-gas`
+- `POST /api/circle/worker/transactions/purchase-advance`
+- `POST /api/circle/worker/transactions/:operationId` to bind the Circle transaction ID returned after SDK approval
+- `GET /api/circle/worker/transactions/:operationId` for Circle plus independently verified Arc status
 
-`submit-proof` and `request-spend` remain `501 not_implemented`. The gas seed is an Arc **native USDC** transfer for transaction fees; the seed defaults to `0.10` and is capped at `0.20` native USDC. Fidra contract principal continues to use only the 6-decimal ERC-20 USDC interface at `0x3600000000000000000000000000000000000000`.
+`purchase-advance` requires an authenticated `ARC-TESTNET` `EOA`. At one explicit Arc block and timestamp it checks:
 
-## Real user-approved `buyClaim`
+- exact wallet-to-claim worker ownership;
+- existing, Certified, unexpired claim;
+- no prior purchase;
+- existing and active platform;
+- nonzero reserve;
+- sufficient unused face-value credit;
+- sufficient accounted vault cash;
+- sufficient actual USDC custody; and
+- a valid user minimum against the exact per-platform fee quote.
 
-`POST /api/circle/vendor/transactions/buy-claim` is the one implemented contract action. Before it ever calls Circle, the server reads Arc directly (`MandateManager.getSpendRequest`, `AdvanceVault.getClaimPurchase`) and requires:
+It then asks Circle to prepare `purchaseAdvance(uint256)` against the deployed AdvanceVaultV2. The minimum is an API quote guard and is not inserted into calldata because the immutable V1 function accepts only the claim ID.
 
-- an authenticated Circle user with an `ARC-TESTNET` `EOA` wallet;
-- `request.status == Locked`;
-- `request.payee` equals the wallet address (exact address binding, never a fallback);
-- the claim has not already been purchased;
-- a future `deadline`; and
-- `minAdvanceAmount <= face * (10000 - discountBps) / 10000` for the deployed 1% discount.
+Each prepared challenge is correlated in memory with the session, wallet, claim, platform, face value, fee, advance, and quote block. After Circle supplies a transaction hash, Fidra independently verifies:
 
-It then creates a Circle contract-execution challenge (`buyClaim(uint256,uint256,uint256)`) that the browser SDK must have the user approve. The server signs nothing. `GET /api/circle/vendor/transactions/:id` maps Circle transaction state to `confirmed` (only with a real `txHash` and ArcScan link), `failed` (no hash), or `pending`.
+1. a successful Arc receipt;
+2. exact worker sender;
+3. exact AdvanceVaultV2 recipient;
+4. `purchaseAdvance` calldata for the expected claim;
+5. `Advanced` claim state;
+6. `Outstanding` purchase state; and
+7. exact worker, platform, face, fee, and advance values.
 
-## Next write milestone
+Only then does the API return `transaction_confirmed`, the real hash, and an ArcScan URL. Rejection, failure, timeout, a reverted receipt, or a hash without the expected state returns no receipt hash.
 
-Vendor `submitProof` and agent `requestSpend` remain stubbed. Implement them only after the live `buyClaim` path has produced a confirmed Arc receipt from a Circle-controlled EOA.
+## Circle configuration status
+
+Treat these as distinct:
+
+- **Implemented:** code and deterministic mocked-boundary tests exist.
+- **Configured:** valid Circle sandbox environment values and console settings are present.
+- **Live-confirmed:** one worker-controlled transaction has been independently confirmed on Arc.
+
+This repository never infers live confirmation from implementation or configuration. See [the Circle checklist](../docs/V1_2_CIRCLE_SETUP.md).
+
+## Legacy V0 API
+
+The `/api/circle/vendor/*` routes remain unchanged for historical V0 evidence, including Legacy `buyClaim`. They are not the current Fidra product path. `submit-proof` and `request-spend` remain honest `501 not_implemented` stubs.
+
+The optional gas seeder transfers Arc native testnet USDC only for transaction fees. It grants no protocol role and is disabled by default. Principal payouts continue to use the 6-decimal ERC-20 USDC contract.

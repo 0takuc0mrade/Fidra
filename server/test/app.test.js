@@ -289,3 +289,200 @@ test("mock mode is rejected instead of fabricating Circle success", async () => 
   assert.equal(payload.wallets.status, "error");
   assert.ok(payload.configurationErrors[0].includes("does not fabricate"));
 });
+
+function configuredWorkerConfig(overrides = {}) {
+  return createConfig({
+    CIRCLE_WALLETS_ENABLED: "true",
+    CIRCLE_API_KEY: "test-circle-key",
+    CIRCLE_APP_ID: "test-circle-app",
+    SERVER_ALLOWED_ORIGINS: "http://localhost:5173",
+    ...overrides,
+  });
+}
+
+function v1Snapshot(overrides = {}) {
+  const value = {
+    chainId: 5_042_002,
+    expectedChainId: 5_042_002,
+    blockNumber: 123n,
+    blockTimestamp: 1_000n,
+    claim: {
+      platformId: 1n,
+      worker: VENDOR_ADDRESS,
+      faceValue: 1_000_000n,
+      dueDate: 2_000n,
+      status: 2,
+    },
+    purchase: { status: 0 },
+    platform: {
+      active: true,
+      creditLimit: 3_000_000n,
+      outstandingExposure: 0n,
+      reserveBalance: 400_000n,
+      advanceFeeBps: 100n,
+    },
+    accountedCash: 3_000_000n,
+    actualCash: 3_000_000n,
+  };
+  return { ...value, ...overrides };
+}
+
+async function postWorkerAdvance(baseUrl, body) {
+  const response = await fetch(`${baseUrl}/api/circle/worker/transactions/purchase-advance`, {
+    method: "POST",
+    headers: {
+      Cookie: "fidra_vendor_session=test-session",
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  return { response, payload: await response.json() };
+}
+
+async function bindWorkerTransaction(baseUrl, operationId, transactionId) {
+  const response = await fetch(`${baseUrl}/api/circle/worker/transactions/${operationId}`, {
+    method: "POST",
+    headers: {
+      Cookie: "fidra_vendor_session=test-session",
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ transactionId }),
+  });
+  return { response, payload: await response.json() };
+}
+
+async function getWorkerTransaction(baseUrl, operationId) {
+  const response = await fetch(`${baseUrl}/api/circle/worker/transactions/${operationId}`, {
+    headers: { Cookie: "fidra_vendor_session=test-session", Origin: "http://localhost:5173" },
+  });
+  return { response, payload: await response.json() };
+}
+
+test("V1 worker advance is fail-closed when Circle is not configured", async () => {
+  const baseUrl = await start(createConfig({ SERVER_ALLOWED_ORIGINS: "http://localhost:5173" }), {
+    sessionStore: authenticatedSessionStore({ withWallet: true }),
+  });
+  const { response, payload } = await postWorkerAdvance(baseUrl, { claimId: 1 });
+  assert.equal(response.status, 503);
+  assert.equal(payload.status, "circle_not_configured");
+  assert.equal("txHash" in payload, false);
+});
+
+test("valid V1 worker advance creates exact purchaseAdvance calldata", async () => {
+  let challengeBody;
+  const baseUrl = await start(configuredWorkerConfig(), {
+    sessionStore: authenticatedSessionStore({ withWallet: true }),
+    v1ChainReads: { getWorkerAdvanceSnapshot: async () => v1Snapshot() },
+    circleClient: {
+      createContractExecutionChallenge: async (_token, body) => {
+        challengeBody = body;
+        return { challengeId: "challenge-v1" };
+      },
+    },
+  });
+  const { response, payload } = await postWorkerAdvance(baseUrl, { claimId: 7, minimumAdvanceAmount: "980000" });
+  assert.equal(response.status, 200);
+  assert.equal(payload.status, "challenge_required");
+  assert.equal(payload.advanceAmount, "990000");
+  assert.equal(payload.feeAmount, "10000");
+  assert.equal(challengeBody.contractAddress, configuredWorkerConfig().v1AdvanceVaultAddress);
+  assert.equal(challengeBody.abiFunctionSignature, "purchaseAdvance(uint256)");
+  assert.deepEqual(challengeBody.abiParameters, ["7"]);
+});
+
+test("V1 worker-wallet mismatch never creates a Circle challenge", async () => {
+  const baseUrl = await start(configuredWorkerConfig(), {
+    sessionStore: authenticatedSessionStore({ withWallet: true }),
+    v1ChainReads: { getWorkerAdvanceSnapshot: async () => v1Snapshot({ claim: { ...v1Snapshot().claim, worker: OTHER_ADDRESS } }) },
+    circleClient: { createContractExecutionChallenge: async () => { throw new Error("must not be called"); } },
+  });
+  const { response, payload } = await postWorkerAdvance(baseUrl, { claimId: 1 });
+  assert.equal(response.status, 409);
+  assert.equal(payload.status, "worker_wallet_mismatch");
+  assert.equal(payload.connectedWallet, VENDOR_ADDRESS);
+  assert.equal(payload.expectedWorker, OTHER_ADDRESS);
+});
+
+async function preparedWorkerOperation({ circleState, verificationResult, verificationError } = {}) {
+  const circleClient = {
+    createContractExecutionChallenge: async () => ({ challengeId: "challenge-v1" }),
+    getTransaction: async () => circleState ?? { state: "INITIATED" },
+  };
+  const v1ChainReads = {
+    getWorkerAdvanceSnapshot: async () => v1Snapshot(),
+    verifyWorkerAdvance: async () => {
+      if (verificationError) throw verificationError;
+      return verificationResult;
+    },
+  };
+  const baseUrl = await start(configuredWorkerConfig(), {
+    sessionStore: authenticatedSessionStore({ withWallet: true }),
+    circleClient,
+    v1ChainReads,
+  });
+  const prepared = await postWorkerAdvance(baseUrl, { claimId: 1 });
+  await bindWorkerTransaction(baseUrl, prepared.payload.operationId, "circle-tx-1");
+  return { baseUrl, operationId: prepared.payload.operationId };
+}
+
+test("Circle approval rejection remains failed without a hash", async () => {
+  const { baseUrl, operationId } = await preparedWorkerOperation({ circleState: { state: "DENIED", errorReason: "user rejected" } });
+  const { payload } = await getWorkerTransaction(baseUrl, operationId);
+  assert.equal(payload.status, "transaction_failed");
+  assert.equal(payload.txHash, null);
+  assert.equal(payload.explorerUrl, null);
+});
+
+test("Circle transaction failure remains failed without a hash", async () => {
+  const { baseUrl, operationId } = await preparedWorkerOperation({ circleState: { state: "FAILED", errorReason: "reverted" } });
+  const { payload } = await getWorkerTransaction(baseUrl, operationId);
+  assert.equal(payload.status, "transaction_failed");
+  assert.equal(payload.errorReason, "reverted");
+  assert.equal(payload.txHash, null);
+});
+
+test("confirmed worker receipt is returned only after exact Arc state verification", async () => {
+  const hash = `0x${"a".repeat(64)}`;
+  const { baseUrl, operationId } = await preparedWorkerOperation({
+    circleState: { state: "COMPLETE", txHash: hash },
+    verificationResult: {
+      transactionHash: hash,
+      blockNumber: 456n,
+      from: VENDOR_ADDRESS,
+      to: configuredWorkerConfig().v1AdvanceVaultAddress,
+    },
+  });
+  const { payload } = await getWorkerTransaction(baseUrl, operationId);
+  assert.equal(payload.status, "transaction_confirmed");
+  assert.equal(payload.txHash, hash);
+  assert.equal(payload.explorerUrl, `https://testnet.arcscan.app/tx/${hash}`);
+  assert.equal(payload.receipt.blockNumber, "456");
+});
+
+test("a Circle hash without the expected Arc state is rejected", async () => {
+  const hash = `0x${"b".repeat(64)}`;
+  const { baseUrl, operationId } = await preparedWorkerOperation({
+    circleState: { state: "COMPLETE", txHash: hash },
+    verificationError: new Error("Arc state does not show an outstanding worker advance."),
+  });
+  const { payload } = await getWorkerTransaction(baseUrl, operationId);
+  assert.equal(payload.status, "transaction_failed");
+  assert.equal(payload.txHash, null);
+  assert.equal(payload.explorerUrl, null);
+  assert.match(payload.errorReason, /does not show/);
+});
+
+test("expired payout operation reports a timeout without a hash", async () => {
+  const operationStore = {
+    get: () => ({ status: "transaction_timed_out" }),
+  };
+  const baseUrl = await start(configuredWorkerConfig(), {
+    sessionStore: authenticatedSessionStore({ withWallet: true }),
+    operationStore,
+  });
+  const { payload } = await getWorkerTransaction(baseUrl, "expired-operation");
+  assert.equal(payload.status, "transaction_timed_out");
+  assert.equal(payload.txHash, null);
+});

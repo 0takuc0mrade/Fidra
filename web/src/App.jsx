@@ -7,11 +7,28 @@ import Landing from "./pages/Landing.jsx";
 import MandateDetail from "./pages/MandateDetail.jsx";
 import Overview from "./pages/Overview.jsx";
 import VendorOnboarding from "./pages/VendorOnboarding.jsx";
+import WorkerPayout from "./pages/WorkerPayout.jsx";
+import PlatformConsole from "./pages/PlatformConsole.jsx";
 import { FIDRA_MODE_STORAGE_KEY, fidraConfig } from "./lib/config.js";
 
 const demoMandateRoute = "/mandates/1042";
 const liveEvidenceRoute = `/mandates/${fidraConfig.liveEvidenceMandateId}`;
-const knownRoutes = new Set(["/", "/overview", demoMandateRoute, liveEvidenceRoute, "/claims", "/activity", "/vendor-onboarding"]);
+const staticRoutes = new Set([
+  "/", "/worker", "/worker/claims", "/platform", "/platform/claims", "/platform/claims/new",
+  "/platform/batches", "/platform/settlements", "/overview", demoMandateRoute,
+  liveEvidenceRoute, "/claims", "/activity", "/vendor-onboarding",
+]);
+
+function workerClaimId(route) {
+  const match = route.match(/^\/worker\/claims\/(\d+)$/);
+  if (!match) return null;
+  const parsed = Number(match[1]);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function isKnownRoute(route) {
+  return staticRoutes.has(route) || Boolean(workerClaimId(route));
+}
 
 function resolveModeRoute(route) {
   if (!fidraConfig.demoMode && route === demoMandateRoute) return liveEvidenceRoute;
@@ -60,7 +77,7 @@ function LiveUnindexedPage({ route, navigate }) {
 }
 
 function App() {
-  const [route, setRoute] = useState(() => knownRoutes.has(window.location.pathname) ? window.location.pathname : "/");
+  const [route, setRoute] = useState(() => isKnownRoute(window.location.pathname) ? window.location.pathname : "/");
   const [notice, setNotice] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
@@ -78,14 +95,14 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    const handlePopState = () => setRoute(knownRoutes.has(window.location.pathname) ? window.location.pathname : "/");
+    const handlePopState = () => setRoute(isKnownRoute(window.location.pathname) ? window.location.pathname : "/");
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   const navigate = (nextRoute) => {
     const resolvedRoute = resolveModeRoute(nextRoute);
-    if (!knownRoutes.has(resolvedRoute)) return;
+    if (!isKnownRoute(resolvedRoute)) return;
     setNotice("");
     window.history.pushState({}, "", resolvedRoute);
     setRoute(resolvedRoute);
@@ -107,15 +124,19 @@ function App() {
     window.location.assign(nextRoute);
   };
 
-  const activeNavRoute = route.startsWith("/mandates") ? "/mandates/1042" : route;
+  const activeNavRoute = route.startsWith("/mandates")
+    ? "/mandates/1042"
+    : route.startsWith("/worker") ? "/worker"
+      : route.startsWith("/platform") ? "/platform" : route;
   const liveUnindexedPage = !fidraConfig.demoMode && liveUnindexedRoutes[route];
+  const isV1Route = route.startsWith("/worker") || route.startsWith("/platform");
 
   if (route === "/") {
     return <Landing navigate={navigate} theme={theme} toggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} toggleDataMode={toggleDataMode} />;
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isV1Route ? "app-shell-v1" : ""}`}>
       <aside className={`sidebar ${mobileNavOpen ? "is-open" : ""}`}>
         <div className="sidebar-top">
           <FidraMark onClick={() => navigate("/")} />
@@ -124,17 +145,19 @@ function App() {
           </button>
         </div>
         <nav aria-label="Primary navigation">
-          {navItems.map(({ label, icon: Icon, route: itemRoute }) => (
-            <button
-              className={`nav-item ${activeNavRoute === itemRoute ? "is-active" : ""}`}
-              type="button"
-              key={label}
-              aria-current={activeNavRoute === itemRoute ? "page" : undefined}
-              onClick={() => navigate(itemRoute)}
-            >
-              <Icon aria-hidden="true" />
-              <span>{label}</span>
-            </button>
+          {navItems.map(({ label, icon: Icon, route: itemRoute, section }, index) => (
+            <div className="nav-entry" key={label}>
+              {(index === 0 || navItems[index - 1].section !== section) && <span className="nav-section-label">{section}</span>}
+              <button
+                className={`nav-item ${activeNavRoute === itemRoute ? "is-active" : ""}`}
+                type="button"
+                aria-current={activeNavRoute === itemRoute ? "page" : undefined}
+                onClick={() => navigate(itemRoute)}
+              >
+                <Icon aria-hidden="true" />
+                <span>{label}</span>
+              </button>
+            </div>
           ))}
         </nav>
         <div className="sidebar-footer">
@@ -159,7 +182,7 @@ function App() {
         </div>
       </aside>
 
-      <main className="main-content">
+      <main className={`main-content ${isV1Route ? "v1-main-content" : ""}`}>
         <div className="mobile-brand-row">
           <button className="mobile-menu" type="button" aria-label="Open navigation" onClick={() => setMobileNavOpen(true)}>
             <List />
@@ -175,6 +198,10 @@ function App() {
             {route === "/claims" && <Claims navigate={navigate} showNotice={showNotice} />}
             {route === "/activity" && <Activity showNotice={showNotice} />}
             {route === "/vendor-onboarding" && <VendorOnboarding showNotice={showNotice} />}
+            {(route === "/worker" || route === "/worker/claims" || workerClaimId(route)) && (
+              <WorkerPayout claimId={workerClaimId(route)} navigate={navigate} showNotice={showNotice} />
+            )}
+            {route.startsWith("/platform") && <PlatformConsole route={route} navigate={navigate} />}
           </>
         )}
       </main>

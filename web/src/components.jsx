@@ -13,14 +13,18 @@ import {
   SpinnerGap,
   SquaresFour,
   Wallet,
+  Lightning,
+  Buildings,
 } from "@phosphor-icons/react";
 
 export const navItems = [
-  { label: "Overview", icon: SquaresFour, route: "/overview" },
-  { label: "Mandates", icon: ListChecks, route: "/mandates/1042" },
-  { label: "Claims", icon: FileText, route: "/claims" },
-  { label: "Activity", icon: Clock, route: "/activity" },
-  { label: "Vendor wallet", icon: Wallet, route: "/vendor-onboarding" },
+  { label: "Worker payouts", icon: Lightning, route: "/worker", section: "Fidra V1" },
+  { label: "Platform", icon: Buildings, route: "/platform", section: "Fidra V1" },
+  { label: "Overview", icon: SquaresFour, route: "/overview", section: "Legacy V0" },
+  { label: "Mandates", icon: ListChecks, route: "/mandates/1042", section: "Legacy V0" },
+  { label: "Claims", icon: FileText, route: "/claims", section: "Legacy V0" },
+  { label: "Activity", icon: Clock, route: "/activity", section: "Legacy V0" },
+  { label: "Vendor wallet", icon: Wallet, route: "/vendor-onboarding", section: "Legacy V0" },
 ];
 
 export function FidraGlyph({ className = "" }) {
@@ -62,7 +66,7 @@ export function StatusBadge({ state }) {
 
 export function PrimaryButton({ children, loading, success, ...props }) {
   return (
-    <button className={`button-primary ${success ? "is-success" : ""}`} {...props}>
+    <button className={`button-primary ${success ? "is-success" : ""}`} aria-busy={loading || undefined} {...props}>
       {loading && <SpinnerGap className="spin" aria-hidden="true" />}
       {success && <Check aria-hidden="true" />}
       {children}

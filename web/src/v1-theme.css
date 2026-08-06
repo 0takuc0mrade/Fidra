@@ -1,0 +1,1296 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt · designed-as-app
+ * nav: N3 side rail · footer: none · enrichment: none · contrast: pass (40–41)
+ * honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (34, 49–57) · icons: pass (30)
+ */
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4 */
+
+html,
+body {
+  overflow-x: clip;
+}
+
+.app-shell-v1 {
+  --background-app: var(--color-paper);
+  --background-surface: var(--color-surface);
+  --background-subtle: var(--color-paper-2);
+  --background-selected: var(--color-accent-soft);
+  --background-hover: var(--color-paper-2);
+  --background-table-head: var(--color-paper-2);
+  --border-default: var(--color-rule);
+  --border-strong: var(--color-rule-strong);
+  --text-primary: var(--color-ink);
+  --text-secondary: var(--color-ink-2);
+  --text-muted: var(--color-muted);
+  --accent-primary: var(--color-accent);
+  --accent-hover: var(--color-accent-hover);
+  --accent-subtle: var(--color-accent-soft);
+  --status-green: var(--color-success);
+  --status-green-bg: var(--color-success-soft);
+  --status-red: var(--color-error);
+  --status-red-bg: var(--color-error-soft);
+  --surface-inverse: var(--color-ink);
+  --notice-background: var(--color-paper-2);
+  --notice-border: var(--color-rule-strong);
+  --toast-background: var(--color-success-soft);
+  --toast-border: var(--color-success);
+  --toast-text: var(--color-success);
+  --scrim: var(--color-scrim);
+  --shadow-app: 0 var(--rule-hairline) var(--space-3xs) var(--color-shadow);
+  min-height: 100dvh;
+  display: block;
+  color: var(--color-ink);
+  background: var(--color-paper);
+  font-family: var(--font-body);
+}
+
+.app-shell-v1 .sidebar {
+  width: var(--rail-width);
+  padding: var(--space-lg) var(--space-sm);
+  border-inline-end: var(--rule-hairline) solid var(--color-rule);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  box-shadow: none;
+  transform: translateX(-100%);
+  transition: transform var(--dur-long) var(--ease-out);
+}
+
+.app-shell-v1 .sidebar.is-open {
+  transform: translateX(0);
+}
+
+.app-shell-v1 .sidebar-top {
+  padding: 0 var(--space-sm) var(--space-xl);
+}
+
+.app-shell-v1 .brand {
+  gap: var(--space-xs);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.app-shell-v1 .brand-mark {
+  color: var(--color-accent);
+}
+
+.app-shell-v1 .sidebar nav {
+  gap: var(--space-2xs);
+}
+
+.app-shell-v1 .nav-section-label {
+  margin: var(--space-lg) var(--space-sm) var(--space-xs);
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.app-shell-v1 .nav-entry:first-child .nav-section-label {
+  margin-top: 0;
+}
+
+.app-shell-v1 .nav-item {
+  min-height: var(--control-height);
+  gap: var(--space-sm);
+  border: var(--rule-hairline) solid transparent;
+  border-radius: var(--radius-control);
+  padding-inline: var(--space-sm);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  transition: color var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+  white-space: nowrap;
+}
+
+.app-shell-v1 .nav-item svg {
+  width: var(--text-md);
+  height: var(--text-md);
+}
+
+.app-shell-v1 .nav-item.is-active {
+  border-color: var(--color-rule);
+  color: var(--color-accent-hover);
+  background: var(--color-accent-soft);
+  font-weight: 600;
+}
+
+.app-shell-v1 .nav-item.is-active::before {
+  display: none;
+}
+
+.app-shell-v1 .sidebar-footer {
+  gap: var(--space-xs);
+  padding-top: var(--space-lg);
+}
+
+.app-shell-v1 .data-mode-toggle,
+.app-shell-v1 .theme-toggle {
+  min-height: var(--control-height);
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-control);
+  color: var(--color-ink-2);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
+  transition: color var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+}
+
+.app-shell-v1 .data-mode-toggle {
+  padding: var(--space-xs);
+}
+
+.app-shell-v1 .theme-toggle {
+  gap: var(--space-sm);
+  padding-inline: var(--space-sm);
+}
+
+.app-shell-v1 .v1-main-content {
+  min-width: 0;
+  padding: var(--space-md);
+}
+
+.app-shell-v1 .mobile-brand-row {
+  margin-bottom: var(--space-lg);
+}
+
+.app-shell-v1 .mobile-menu,
+.app-shell-v1 .mobile-close {
+  width: var(--control-height);
+  height: var(--control-height);
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-control);
+  color: var(--color-ink);
+  background: var(--color-surface);
+}
+
+.app-shell-v1 .nav-scrim {
+  z-index: var(--z-raised);
+  width: 100%;
+  height: 100dvh;
+  background: var(--color-scrim);
+}
+
+.app-shell-v1 .v1-page-header {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding-block: var(--space-xs) var(--space-lg);
+  border-block-end: var(--rule-hairline) solid var(--color-rule);
+}
+
+.app-shell-v1 .v1-page-header .page-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: start;
+}
+
+.app-shell-v1 .v1-page-header .mode-badge {
+  justify-self: start;
+}
+
+.app-shell-v1 .v1-page-header h1 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  font-style: normal;
+}
+
+.app-shell-v1 .v1-page-header p {
+  max-width: 65ch;
+  margin-top: var(--space-xs);
+  color: var(--color-ink-2);
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.app-shell-v1 .mode-badge,
+.app-shell-v1 .v1-config-state,
+.app-shell-v1 .status-badge,
+.app-shell-v1 .network-pill {
+  border: var(--rule-hairline) solid var(--color-rule-strong);
+  border-radius: var(--radius-pill);
+  color: var(--color-ink-2);
+  background: var(--color-paper-2);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.app-shell-v1 .mode-badge.mode-live,
+.app-shell-v1 .v1-config-state.is-ready {
+  border-color: var(--color-success);
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.app-shell-v1 .status-certified,
+.app-shell-v1 .status-settled,
+.app-shell-v1 .status-advanced,
+.app-shell-v1 .status-active {
+  border-color: var(--color-success);
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.app-shell-v1 .status-paused,
+.app-shell-v1 .status-defaulted,
+.app-shell-v1 .status-cancelled {
+  border-color: var(--color-error);
+  color: var(--color-error);
+  background: var(--color-error-soft);
+}
+
+.app-shell-v1 .v1-session-panel,
+.app-shell-v1 .v1-claim-list,
+.app-shell-v1 .v1-payout-panel,
+.app-shell-v1 .v1-transaction-panel,
+.app-shell-v1 .v1-form-panel,
+.app-shell-v1 .v1-contracts,
+.app-shell-v1 .v1-accounting,
+.app-shell-v1 .v1-proof-claims,
+.app-shell-v1 .v1-transaction-evidence {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-surface);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  box-shadow: none;
+}
+
+.app-shell-v1 .v1-session-panel,
+.app-shell-v1 .v1-form-panel,
+.app-shell-v1 .v1-accounting,
+.app-shell-v1 .v1-proof-claims,
+.app-shell-v1 .v1-contracts,
+.app-shell-v1 .v1-transaction-evidence {
+  padding: var(--space-md);
+}
+
+.app-shell-v1 .v1-session-panel,
+.app-shell-v1 .v1-form-panel,
+.app-shell-v1 .v1-platform-summary,
+.app-shell-v1 .v1-evidence-dossier {
+  margin-top: var(--space-lg);
+}
+
+.app-shell-v1 .v1-section-heading,
+.app-shell-v1 .v1-payout-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: start;
+}
+
+.app-shell-v1 .v1-section-heading h2,
+.app-shell-v1 .v1-payout-title h2,
+.app-shell-v1 .v1-operating-note h2,
+.app-shell-v1 .v1-evidence-intro h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  font-style: normal;
+  text-wrap: balance;
+}
+
+.app-shell-v1 .v1-section-heading p,
+.app-shell-v1 .v1-payout-title span,
+.app-shell-v1 .v1-empty-copy,
+.app-shell-v1 .v1-helper-copy,
+.app-shell-v1 .v1-risk-copy {
+  max-width: 72ch;
+  margin-top: var(--space-2xs);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.app-shell-v1 .v1-helper-copy {
+  min-height: 1lh;
+}
+
+.app-shell-v1 .v1-auth-controls,
+.app-shell-v1 .v1-form-grid {
+  margin-top: var(--space-lg);
+}
+
+.app-shell-v1 .v1-auth-controls label,
+.app-shell-v1 .v1-form-grid label,
+.app-shell-v1 .v1-json-label,
+.app-shell-v1 .v1-certify-row label {
+  gap: var(--space-xs);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.app-shell-v1 .v1-inline-form,
+.app-shell-v1 .v1-wallet-record,
+.app-shell-v1 .v1-certify-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-xs);
+}
+
+.app-shell-v1 .v1-inline-form input,
+.app-shell-v1 .v1-form-grid input,
+.app-shell-v1 .v1-certify-row input,
+.app-shell-v1 .v1-json-label textarea {
+  width: 100%;
+  min-height: var(--control-height);
+  border: var(--rule-hairline) solid var(--color-rule-strong);
+  border-radius: var(--radius-control);
+  outline: calc(var(--rule-hairline) * 2) solid transparent;
+  outline-offset: var(--rule-hairline);
+  padding: var(--space-sm);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  transition: background-color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
+}
+
+.app-shell-v1 .v1-json-label textarea {
+  min-height: calc(var(--control-height) * 3);
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.app-shell-v1 input::placeholder,
+.app-shell-v1 textarea::placeholder {
+  color: var(--color-muted);
+  opacity: 1;
+}
+
+.app-shell-v1 :where(input, textarea):disabled {
+  border-color: var(--color-rule);
+  color: var(--color-muted);
+  background: var(--color-paper-2);
+}
+
+.app-shell-v1 :where(input, textarea)[aria-invalid="true"],
+.app-shell-v1 :where(input, textarea).is-error {
+  border-color: var(--color-error);
+  color: var(--color-ink);
+  background: var(--color-error-soft);
+}
+
+.app-shell-v1 :where(input, textarea).is-success {
+  border-color: var(--color-success);
+  color: var(--color-ink);
+  background: var(--color-success-soft);
+}
+
+.app-shell-v1 :where(input, textarea)[aria-busy="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-ink);
+  background: var(--color-accent-soft);
+}
+
+.app-shell-v1 .v1-inline-form input:focus,
+.app-shell-v1 .v1-form-grid input:focus,
+.app-shell-v1 .v1-certify-row input:focus,
+.app-shell-v1 .v1-json-label textarea:focus {
+  border-color: var(--color-rule-strong);
+  outline-color: var(--color-focus);
+}
+
+.app-shell-v1 .button-primary,
+.app-shell-v1 .button-outline,
+.app-shell-v1 .button-link,
+.app-shell-v1 .icon-button,
+.app-shell-v1 .v1-tabs button {
+  min-height: var(--control-height);
+  border-radius: var(--radius-control);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  transition: color var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out), transform var(--dur-micro) var(--ease-out), opacity var(--dur-short) var(--ease-out);
+}
+
+.app-shell-v1 .button-primary {
+  min-width: 0;
+  border: var(--rule-hairline) solid var(--color-accent);
+  padding-inline: var(--space-lg);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.app-shell-v1 .button-primary[aria-busy="true"] {
+  cursor: wait;
+}
+
+.app-shell-v1 .button-primary.is-error {
+  border-color: var(--color-error);
+  color: var(--color-accent-ink);
+  background: var(--color-error);
+}
+
+.app-shell-v1 .button-primary.is-success {
+  border-color: var(--color-success);
+  color: var(--color-accent-ink);
+  background: var(--color-success);
+}
+
+.app-shell-v1 .button-outline {
+  border: var(--rule-hairline) solid var(--color-rule-strong);
+  color: var(--color-ink);
+  background: var(--color-surface);
+}
+
+.app-shell-v1 .button-link {
+  color: var(--color-accent-hover);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--space-2xs);
+}
+
+.app-shell-v1 .icon-button {
+  min-width: var(--control-height);
+  padding: 0;
+}
+
+.app-shell-v1 :where(button, a, input, textarea):focus-visible {
+  outline: calc(var(--rule-hairline) * 2) solid var(--color-focus);
+  outline-offset: calc(var(--rule-hairline) * 2);
+}
+
+.app-shell-v1 :where(button, input, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.app-shell-v1 :where(button, a):active {
+  transform: translateY(var(--rule-hairline));
+}
+
+.app-shell-v1 .v1-wallet-empty {
+  grid-template-columns: var(--control-height) minmax(0, 1fr);
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+  border-top: var(--rule-hairline) solid var(--color-rule);
+  padding-top: var(--space-lg);
+}
+
+.app-shell-v1 .v1-wallet-empty .button-primary {
+  grid-column: 1 / -1;
+}
+
+.app-shell-v1 .v1-wallet-empty > svg,
+.app-shell-v1 .v1-wallet-address > svg {
+  color: var(--color-accent);
+}
+
+.app-shell-v1 .v1-wallet-record {
+  margin-top: var(--space-lg);
+  border-top: var(--rule-hairline) solid var(--color-rule);
+  padding-top: var(--space-md);
+}
+
+.app-shell-v1 code,
+.app-shell-v1 .v1-table,
+.app-shell-v1 .v1-payout-amount,
+.app-shell-v1 .v1-capital-ledger,
+.app-shell-v1 .v1-accounting-list {
+  font-variant-numeric: tabular-nums;
+}
+
+.app-shell-v1 code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.app-shell-v1 .v1-flow-message {
+  max-width: var(--content-max);
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-control);
+  padding: var(--space-sm);
+  color: var(--color-ink-2);
+  background: var(--color-paper-2);
+  font-size: var(--text-sm);
+}
+
+.app-shell-v1 .v1-flow-message > span {
+  min-width: 0;
+  flex: 1;
+}
+
+.app-shell-v1 .v1-flow-message > .button-link {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin-inline-start: auto;
+  padding: 0;
+  color: inherit;
+}
+
+.app-shell-v1 .v1-flow-error {
+  border-color: var(--color-error);
+  color: var(--color-error);
+  background: var(--color-error-soft);
+}
+
+.app-shell-v1 .v1-flow-success {
+  border-color: var(--color-success);
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.app-shell-v1 .v1-loading {
+  min-height: calc(var(--control-height) * 4);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+}
+
+.app-shell-v1 .v1-claim-list {
+  margin-top: var(--space-md);
+  overflow: visible;
+}
+
+.app-shell-v1 .v1-claim-list > .v1-section-heading {
+  padding: var(--space-md);
+}
+
+.app-shell-v1 .v1-table {
+  overflow: visible;
+  border-top: var(--rule-hairline) solid var(--color-rule);
+}
+
+.app-shell-v1 .v1-table-head {
+  display: none;
+}
+
+.app-shell-v1 .v1-table-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-sm);
+  min-height: 0;
+  border-top: var(--rule-hairline) solid var(--color-rule);
+  padding: var(--space-md);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+}
+
+.app-shell-v1 .v1-table-row:first-child,
+.app-shell-v1 .v1-table-row:nth-child(2) {
+  border-top: 0;
+}
+
+.app-shell-v1 .v1-table-row > :where(span, code) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.app-shell-v1 .v1-table-row > :where(span, code)::before {
+  display: block;
+  margin-bottom: var(--space-2xs);
+  color: var(--color-muted);
+  content: attr(data-label);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.app-shell-v1 .v1-table-row > :first-child {
+  grid-column: 1 / -1;
+}
+
+.app-shell-v1 .v1-table-row small {
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+}
+
+.app-shell-v1 .v1-worker-grid {
+  max-width: var(--content-max);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.app-shell-v1 .v1-payout-panel,
+.app-shell-v1 .v1-transaction-panel {
+  padding: var(--space-md);
+}
+
+.app-shell-v1 .v1-payout-amount {
+  display: grid;
+  gap: var(--space-xs);
+  margin: var(--space-xl) 0 var(--space-lg);
+  padding-bottom: var(--space-lg);
+  border-bottom: var(--rule-hairline) solid var(--color-rule);
+}
+
+.app-shell-v1 .v1-payout-amount .v1-amount-label {
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.app-shell-v1 .v1-payout-amount > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.app-shell-v1 .v1-payout-amount strong {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.app-shell-v1 .v1-payout-amount span,
+.app-shell-v1 .v1-payout-amount small {
+  color: var(--color-ink-2);
+}
+
+.app-shell-v1 .v1-payout-amount small {
+  font-size: var(--text-sm);
+}
+
+.app-shell-v1 .v1-payout-breakdown > div,
+.app-shell-v1 .v1-accounting-list > div {
+  min-height: var(--control-height);
+  border-top: var(--rule-hairline) solid var(--color-rule);
+  font-size: var(--text-sm);
+}
+
+.app-shell-v1 .v1-payout-breakdown dt,
+.app-shell-v1 .v1-accounting-list dt {
+  color: var(--color-ink-2);
+}
+
+.app-shell-v1 .v1-payout-breakdown dd,
+.app-shell-v1 .v1-accounting-list dd {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.app-shell-v1 .v1-eligibility,
+.app-shell-v1 .v1-wallet-mismatch,
+.app-shell-v1 .v1-reconciliation-result,
+.app-shell-v1 .v1-inline-empty {
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-control);
+  color: var(--color-ink-2);
+  background: var(--color-paper-2);
+}
+
+.app-shell-v1 .v1-eligibility-ready,
+.app-shell-v1 .v1-reconciliation-result {
+  border-color: var(--color-success);
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.app-shell-v1 .v1-eligibility-blocked {
+  border-color: var(--color-error);
+  color: var(--color-error);
+  background: var(--color-error-soft);
+}
+
+.app-shell-v1 .v1-transaction-steps li > span {
+  border: var(--rule-hairline) solid var(--color-rule-strong);
+  color: var(--color-ink-2);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+}
+
+.app-shell-v1 .v1-transaction-steps li:not(:last-child)::after {
+  background: var(--color-rule);
+}
+
+.app-shell-v1 .v1-transaction-steps li.is-complete > span,
+.app-shell-v1 .v1-transaction-steps li.is-current > span {
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+}
+
+.app-shell-v1 .v1-transaction-steps small,
+.app-shell-v1 .v1-existing-purchase {
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+}
+
+.app-shell-v1 .v1-receipt-link {
+  border: var(--rule-hairline) solid var(--color-success);
+  border-radius: var(--radius-control);
+  color: var(--color-success);
+  background: var(--color-success-soft);
+  white-space: nowrap;
+}
+
+.app-shell-v1 .v1-tabs {
+  max-width: var(--content-max);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2xs);
+  margin-top: var(--space-md);
+  overflow: visible;
+  border-bottom: 0;
+  padding: var(--space-2xs);
+  background: var(--color-paper-2);
+  border-radius: var(--radius-control);
+}
+
+.app-shell-v1 .v1-tabs button {
+  border: var(--rule-hairline) solid transparent;
+  padding-inline: var(--space-sm);
+  color: var(--color-ink-2);
+  background: transparent;
+}
+
+.app-shell-v1 .v1-tabs button.is-active {
+  border-color: var(--color-rule);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-weight: 600;
+}
+
+.app-shell-v1 .v1-platform-summary {
+  width: 100%;
+  max-width: var(--content-max);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-surface);
+  color: var(--color-ink);
+  background: var(--color-surface);
+}
+
+.app-shell-v1 .v1-platform-state {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  align-content: start;
+  padding: var(--space-lg);
+  color: var(--color-accent-ink);
+  background: var(--color-ink);
+}
+
+.app-shell-v1 .v1-platform-state > span:first-child {
+  display: grid;
+  gap: var(--space-2xs);
+  color: var(--color-accent-ink);
+}
+
+.app-shell-v1 .v1-platform-state strong {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
+.app-shell-v1 .v1-platform-state small,
+.app-shell-v1 .v1-platform-state p {
+  color: var(--color-paper-3);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.app-shell-v1 .v1-platform-state p {
+  grid-column: 1 / -1;
+  max-width: 42ch;
+  margin: var(--space-sm) 0 0;
+}
+
+.app-shell-v1 .v1-platform-state .status-badge {
+  align-self: start;
+}
+
+.app-shell-v1 .v1-capital-ledger {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+}
+
+.app-shell-v1 .v1-capital-ledger > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-xs) var(--space-md);
+  padding: var(--space-md);
+  border-top: var(--rule-hairline) solid var(--color-rule);
+}
+
+.app-shell-v1 .v1-capital-ledger dt,
+.app-shell-v1 .v1-capital-ledger small {
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+}
+
+.app-shell-v1 .v1-capital-ledger dd {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: right;
+}
+
+.app-shell-v1 .v1-capital-ledger small {
+  grid-column: 1 / -1;
+}
+
+.app-shell-v1 .v1-platform-overview {
+  max-width: var(--content-max);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.app-shell-v1 .v1-operating-note {
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-surface);
+  padding: var(--space-lg);
+  color: var(--color-ink);
+  background: var(--color-paper-2);
+}
+
+.app-shell-v1 .v1-operating-note p,
+.app-shell-v1 .v1-evidence-intro p {
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+}
+
+.app-shell-v1 .v1-operating-note dl > div {
+  border-top: var(--rule-hairline) solid var(--color-rule);
+}
+
+.app-shell-v1 .v1-form-panel {
+  margin-top: var(--space-lg);
+}
+
+.app-shell-v1 .v1-form-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.app-shell-v1 .v1-field-wide {
+  grid-column: auto;
+}
+
+.app-shell-v1 .v1-certify-row {
+  margin-top: var(--space-lg);
+  border-top: var(--rule-hairline) solid var(--color-rule);
+  padding-top: var(--space-lg);
+}
+
+.app-shell-v1 .v1-certify-row input {
+  width: 100%;
+}
+
+.app-shell-v1 .v1-evidence-header,
+.app-shell-v1 .v1-evidence-dossier {
+  max-width: var(--dossier-max);
+}
+
+.app-shell-v1 .v1-evidence-dossier {
+  width: 100%;
+  margin-inline: auto;
+}
+
+.app-shell-v1 .v1-evidence-dossier > :where(section, div) {
+  max-width: 100%;
+}
+
+.app-shell-v1 .v1-evidence-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-lg);
+  margin: 0;
+  border-bottom: 0;
+  padding: var(--space-lg) 0 var(--space-xl);
+}
+
+.app-shell-v1 .v1-evidence-intro h2 {
+  max-width: 28ch;
+  font-size: var(--text-xl);
+}
+
+.app-shell-v1 .v1-evidence-intro dl > div {
+  border-top: var(--rule-hairline) solid var(--color-rule);
+  font-size: var(--text-sm);
+}
+
+.app-shell-v1 .v1-contracts,
+.app-shell-v1 .v1-accounting,
+.app-shell-v1 .v1-proof-claims,
+.app-shell-v1 .v1-transaction-evidence {
+  margin: 0;
+  border: 0;
+  border-top: var(--rule-hairline) solid var(--color-rule-strong);
+  border-radius: 0;
+  padding: var(--space-xl) 0;
+  background: transparent;
+}
+
+.app-shell-v1 .v1-contract-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  min-height: 0;
+  border-top: var(--rule-hairline) solid var(--color-rule);
+  padding: var(--space-md) 0;
+  font-size: var(--text-sm);
+}
+
+.app-shell-v1 .v1-contract-row code {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.app-shell-v1 .v1-contract-row a,
+.app-shell-v1 .v1-transaction-evidence a {
+  color: var(--color-accent-hover);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--space-2xs);
+  white-space: nowrap;
+}
+
+.app-shell-v1 .v1-evidence-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin: 0;
+}
+
+.app-shell-v1 .v1-proof-claim {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  min-height: var(--control-height);
+  border-top: var(--rule-hairline) solid var(--color-rule);
+  padding-block: var(--space-sm);
+  font-size: var(--text-sm);
+}
+
+.app-shell-v1 .v1-proof-claim .status-badge {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.app-shell-v1 .v1-transaction-evidence > a {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  min-height: var(--control-height);
+  border-top: var(--rule-hairline) solid var(--color-rule);
+  padding-block: var(--space-sm);
+}
+
+.app-shell-v1 .v1-transaction-evidence > a code {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  overflow-wrap: anywhere;
+}
+
+.app-shell-v1 .v1-legacy-separation {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+  border: 0;
+  border-top: var(--rule-hairline) solid var(--color-rule-strong);
+  border-radius: 0;
+  padding: var(--space-xl) 0;
+  color: var(--color-ink);
+  background: transparent;
+  font-size: var(--text-sm);
+}
+
+.app-shell-v1 .v1-legacy-separation span {
+  max-width: 72ch;
+  color: var(--color-ink-2);
+  text-align: left;
+  line-height: 1.6;
+}
+
+.app-shell-v1 .toast {
+  z-index: var(--z-toast);
+  border: var(--rule-hairline) solid var(--color-success);
+  border-radius: var(--radius-control);
+  color: var(--color-success);
+  background: var(--color-success-soft);
+  box-shadow: 0 var(--space-2xs) var(--space-xs) var(--color-shadow);
+  transition: opacity var(--dur-short) var(--ease-out), transform var(--dur-short) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .app-shell-v1 .nav-item:hover,
+  .app-shell-v1 .data-mode-toggle:hover,
+  .app-shell-v1 .theme-toggle:hover,
+  .app-shell-v1 .button-outline:hover:not(:disabled),
+  .app-shell-v1 .v1-tabs button:hover {
+    color: var(--color-ink);
+    background: var(--color-paper-2);
+  }
+
+  .app-shell-v1 .button-primary:hover:not(:disabled) {
+    color: var(--color-accent-ink);
+    background: var(--color-accent-hover);
+    opacity: 1;
+    transform: translateY(calc(var(--rule-hairline) * -1));
+  }
+
+  .app-shell-v1 .button-link:hover,
+  .app-shell-v1 .v1-contract-row a:hover,
+  .app-shell-v1 .v1-transaction-evidence a:hover {
+    color: var(--color-accent-hover);
+    text-decoration-color: currentColor;
+  }
+
+  .app-shell-v1 :where(input, textarea):hover:not(:disabled) {
+    background: var(--color-paper-2);
+  }
+}
+
+@media (min-width: 40rem) {
+  .app-shell-v1 .v1-main-content {
+    padding: var(--space-lg);
+  }
+
+  .app-shell-v1 .v1-page-header .page-title-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-lg);
+    align-items: end;
+  }
+
+  .app-shell-v1 .v1-page-header .mode-badge {
+    justify-self: auto;
+  }
+
+  .app-shell-v1 .v1-session-panel,
+  .app-shell-v1 .v1-form-panel,
+  .app-shell-v1 .v1-accounting,
+  .app-shell-v1 .v1-proof-claims,
+  .app-shell-v1 .v1-contracts,
+  .app-shell-v1 .v1-transaction-evidence,
+  .app-shell-v1 .v1-payout-panel,
+  .app-shell-v1 .v1-transaction-panel {
+    padding: var(--space-lg);
+  }
+
+  .app-shell-v1 .v1-section-heading,
+  .app-shell-v1 .v1-payout-title {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .app-shell-v1 .v1-inline-form,
+  .app-shell-v1 .v1-wallet-record,
+  .app-shell-v1 .v1-certify-row {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  .app-shell-v1 .v1-inline-form input {
+    min-width: min(20rem, 100%);
+  }
+
+  .app-shell-v1 .v1-wallet-address {
+    margin-right: auto;
+  }
+
+  .app-shell-v1 .v1-tabs {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .app-shell-v1 .v1-tabs button {
+    flex: 0 0 auto;
+  }
+
+  .app-shell-v1 .v1-capital-ledger {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-shell-v1 .v1-capital-ledger > div:nth-child(even) {
+    border-left: var(--rule-hairline) solid var(--color-rule);
+  }
+
+  .app-shell-v1 .v1-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-shell-v1 .v1-field-wide {
+    grid-column: 1 / -1;
+  }
+
+  .app-shell-v1 .v1-certify-row input {
+    width: 11.25rem;
+  }
+
+  .app-shell-v1 .v1-evidence-intro {
+    grid-template-columns: minmax(0, 1.45fr) minmax(16rem, 0.55fr);
+    gap: var(--space-xl);
+  }
+
+  .app-shell-v1 .v1-contract-row {
+    grid-template-columns: minmax(13rem, 0.8fr) minmax(20rem, 1.5fr) auto;
+  }
+
+  .app-shell-v1 .v1-contract-row code {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .app-shell-v1 .v1-proof-claim {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .app-shell-v1 .v1-proof-claim .status-badge {
+    grid-column: auto;
+    justify-self: auto;
+  }
+
+  .app-shell-v1 .v1-transaction-evidence > a {
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, auto) auto;
+  }
+
+  .app-shell-v1 .v1-transaction-evidence > a code {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (min-width: 52rem) {
+  .app-shell-v1 .v1-table {
+    overflow-x: auto;
+  }
+
+  .app-shell-v1 .v1-table-head {
+    display: grid;
+  }
+
+  .app-shell-v1 .v1-table-row {
+    min-width: 47.5rem;
+    grid-template-columns: minmax(9.375rem, 1.2fr) 8.4375rem 9.0625rem 7.5rem 6.5625rem;
+    gap: var(--space-md);
+    align-items: center;
+    min-height: 3.75rem;
+    padding: var(--space-xs) var(--space-md);
+  }
+
+  .app-shell-v1 .v1-table-row:first-child {
+    border-top: 0;
+  }
+
+  .app-shell-v1 .v1-table-row:nth-child(2) {
+    border-top: var(--rule-hairline) solid var(--color-rule);
+  }
+
+  .app-shell-v1 .v1-table-row > :where(span, code)::before {
+    display: none;
+  }
+
+  .app-shell-v1 .v1-table-row > :first-child {
+    grid-column: auto;
+  }
+
+  .app-shell-v1 .v1-platform-table-row {
+    min-width: 60rem;
+    grid-template-columns: minmax(9.375rem, 1.1fr) 7.8125rem 7.5rem 8.4375rem 6.875rem minmax(10rem, 1.2fr);
+  }
+}
+
+@media (min-width: 64rem) {
+  .app-shell-v1 {
+    display: grid;
+    grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  }
+
+  .app-shell-v1 .sidebar {
+    width: var(--rail-width);
+    transform: none;
+  }
+
+  .app-shell-v1 .v1-main-content {
+    grid-column: 2;
+    padding: var(--space-xl);
+  }
+
+  .app-shell-v1 .v1-worker-grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(20rem, 0.75fr);
+  }
+
+  .app-shell-v1 .v1-platform-summary {
+    grid-template-columns: minmax(16rem, 0.55fr) minmax(0, 1.45fr);
+  }
+
+  .app-shell-v1 .v1-capital-ledger > div:nth-child(1),
+  .app-shell-v1 .v1-capital-ledger > div:nth-child(2) {
+    border-top: 0;
+  }
+
+  .app-shell-v1 .v1-platform-overview {
+    grid-template-columns: minmax(0, 1.5fr) minmax(18.75rem, 0.5fr);
+  }
+
+  .app-shell-v1 .v1-evidence-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 0.9fr);
+    column-gap: var(--space-xl);
+  }
+}
+
+@media (min-width: 76rem) {
+  .app-shell-v1 .v1-capital-ledger {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .app-shell-v1 .v1-capital-ledger > div,
+  .app-shell-v1 .v1-capital-ledger > div:nth-child(1),
+  .app-shell-v1 .v1-capital-ledger > div:nth-child(2) {
+    border-top: 0;
+  }
+
+  .app-shell-v1 .v1-capital-ledger > div + div {
+    border-left: var(--rule-hairline) solid var(--color-rule);
+  }
+}
+
+@media (pointer: coarse) {
+  .app-shell-v1 :where(button, a, input, textarea) {
+    min-height: var(--control-height);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell-v1 *,
+  .app-shell-v1 *::before,
+  .app-shell-v1 *::after {
+    animation-duration: var(--dur-micro) !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: var(--dur-micro) !important;
+  }
+
+  .app-shell-v1 :where(button, a):active,
+  .app-shell-v1 .button-primary:hover:not(:disabled) {
+    transform: none;
+  }
+}
