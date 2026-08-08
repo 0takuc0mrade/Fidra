@@ -19,3 +19,24 @@ test("once-per-wallet gas seed returns the recorded receipt without sending agai
   assert.equal(result.status, "already_seeded");
   assert.equal(result.transactionHash, recorded.transactionHash);
 });
+
+test("gas seed budget checks are serialized across concurrent wallets", async () => {
+  const service = new GasSeedService(createConfig(), {});
+  let active = 0;
+  let maximumActive = 0;
+  service.seedUnlocked = async (wallet) => {
+    active += 1;
+    maximumActive = Math.max(maximumActive, active);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    active -= 1;
+    return wallet.id;
+  };
+
+  const results = await Promise.all([
+    service.seed({ id: "wallet-a" }),
+    service.seed({ id: "wallet-b" }),
+  ]);
+
+  assert.deepEqual(results, ["wallet-a", "wallet-b"]);
+  assert.equal(maximumActive, 1);
+});

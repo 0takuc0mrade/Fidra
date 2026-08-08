@@ -13,6 +13,7 @@ export class GasSeedService {
   constructor(config, walletStore) {
     this.config = config;
     this.walletStore = walletStore;
+    this.seedQueue = Promise.resolve();
   }
 
   clients() {
@@ -38,6 +39,16 @@ export class GasSeedService {
   }
 
   async seed(wallet, context = {}) {
+    const previous = this.seedQueue;
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    this.seedQueue = previous.then(() => gate);
+    await previous;
+    try { return await this.seedUnlocked(wallet, context); }
+    finally { release(); }
+  }
+
+  async seedUnlocked(wallet, context = {}) {
     const metadata = await this.walletStore.get(wallet.id);
     if (this.config.seedOncePerWallet && metadata?.gasSeed?.transactionHash) {
       return { ...metadata.gasSeed, status: "already_seeded" };

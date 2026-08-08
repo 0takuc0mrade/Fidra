@@ -4,8 +4,8 @@ import { config } from "./config.js";
 
 const server = createServer(createApp(config));
 
-server.listen(config.port, "127.0.0.1", () => {
-  console.log(`Fidra server listening on http://127.0.0.1:${config.port}`);
+server.listen(config.port, config.host, () => {
+  console.log(`Fidra server listening on http://${config.host}:${config.port}`);
   console.log(`Circle wallets: ${config.walletsConfigured ? "configured" : "not configured"}; gas seed: ${config.gasSeedConfigured ? "configured" : "not configured"}`);
 });
 

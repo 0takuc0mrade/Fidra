@@ -175,6 +175,11 @@ export function createApp(config, overrides = {}) {
     }
 
     try {
+      if (route === "GET /api/health") {
+        json(response, 200, { status: "ok" }, headers);
+        return;
+      }
+
       if (route === "GET /api/circle/status") {
         json(response, 200, createCircleStatus(config, lastCircleError), headers);
         return;
@@ -221,7 +226,7 @@ export function createApp(config, overrides = {}) {
           deviceToken: tokenData.deviceToken,
           deviceEncryptionKey: tokenData.deviceEncryptionKey,
           otpToken: tokenData.otpToken,
-        }, { ...headers, "Set-Cookie": sessionCookie(session, config.secureCookies) });
+        }, { ...headers, "Set-Cookie": sessionCookie(session, config.secureCookies, config.cookieSameSite) });
         return;
       }
 
@@ -249,7 +254,7 @@ export function createApp(config, overrides = {}) {
       if (["POST /api/circle/vendor/session/logout", "POST /api/circle/worker/session/logout"].includes(route)) {
         const session = requestSession(request, sessionStore);
         sessionStore.delete(session?.id);
-        json(response, 200, { status: "signed_out" }, { ...headers, "Set-Cookie": clearSessionCookie(config.secureCookies) });
+        json(response, 200, { status: "signed_out" }, { ...headers, "Set-Cookie": clearSessionCookie(config.secureCookies, config.cookieSameSite) });
         return;
       }
 
@@ -409,7 +414,7 @@ export function createApp(config, overrides = {}) {
           throw new SandboxPlatformError("rate_limited", "Demo task creation is rate limited.", 429);
         }
         let completed;
-        try { completed = await workflowStore.withLock(workflow.id, async () => {
+        try { completed = await workflowStore.withLock("global:demo-task-budget", async () => {
           let current = await workflowStore.get(workflow.id);
           if (current.claim?.certifyReceipt) return current;
           if (!current.gasFunding || !["confirmed", "not_needed", "already_seeded"].includes(current.gasFunding.status)) {

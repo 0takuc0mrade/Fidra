@@ -101,3 +101,19 @@ settlement key, fund its reserve through the one-time owner path, fund that
 settlement wallet for one exact settlement, and configure a separate gas-funder
 key. Review `docs/V1_4_ARCHITECTURE.md`; never use the protocol-owner key for
 either runtime signer.
+
+## Public hosting
+
+The server accepts the host-provided `PORT` and binds to `HOST` (`0.0.0.0` by
+default). `GET /api/health` is the minimal non-secret health-check endpoint.
+
+For Render, use one paid instance with a persistent disk mounted at
+`/var/data/fidra` and set `FIDRA_RUNTIME_DATA_DIR=/var/data/fidra`. This places
+both `worker-wallets.json` and `demo-workflows.json` on the mounted disk. Do not
+scale the JSON-backed service beyond one instance.
+
+Set `SERVER_ALLOWED_ORIGINS` to the exact HTTPS frontend origin. If the frontend
+and API are cross-site provider domains, set both `SESSION_COOKIE_SECURE=true`
+and `SESSION_COOKIE_SAME_SITE=None`. A shared custom parent domain can retain
+`SameSite=Lax`. Wildcard origins and insecure `SameSite=None` configurations
+fail closed. See [`PUBLIC_DEPLOYMENT.md`](../docs/PUBLIC_DEPLOYMENT.md).

@@ -9,6 +9,7 @@ function filePath(value) {
 export class WalletStore {
   constructor(metadataFile) {
     this.metadataFile = filePath(metadataFile);
+    this.writeQueue = Promise.resolve();
   }
 
   async readAll() {
@@ -29,20 +30,22 @@ export class WalletStore {
   }
 
   async upsert(wallet, circleUserId) {
-    const data = await this.readAll();
-    const previous = data.wallets[wallet.id] ?? {};
-    data.wallets[wallet.id] = {
-      ...previous,
-      walletId: wallet.id,
-      address: wallet.address,
-      blockchain: wallet.blockchain,
-      accountType: wallet.accountType,
-      circleUserId,
-      recordedAt: previous.recordedAt ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    await this.writeAll(data);
-    return data.wallets[wallet.id];
+    return this.withWriteLock(async () => {
+      const data = await this.readAll();
+      const previous = data.wallets[wallet.id] ?? {};
+      data.wallets[wallet.id] = {
+        ...previous,
+        walletId: wallet.id,
+        address: wallet.address,
+        blockchain: wallet.blockchain,
+        accountType: wallet.accountType,
+        circleUserId,
+        recordedAt: previous.recordedAt ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      await this.writeAll(data);
+      return data.wallets[wallet.id];
+    });
   }
 
   async get(walletId) {
@@ -51,12 +54,14 @@ export class WalletStore {
   }
 
   async recordSeed(walletId, seed) {
-    const data = await this.readAll();
-    if (!data.wallets[walletId]) throw new Error("Wallet metadata is missing.");
-    data.wallets[walletId].gasSeed = { ...seed, recordedAt: new Date().toISOString() };
-    data.wallets[walletId].updatedAt = new Date().toISOString();
-    await this.writeAll(data);
-    return data.wallets[walletId];
+    return this.withWriteLock(async () => {
+      const data = await this.readAll();
+      if (!data.wallets[walletId]) throw new Error("Wallet metadata is missing.");
+      data.wallets[walletId].gasSeed = { ...seed, recordedAt: new Date().toISOString() };
+      data.wallets[walletId].updatedAt = new Date().toISOString();
+      await this.writeAll(data);
+      return data.wallets[walletId];
+    });
   }
 
   async dailyConfirmedSeedTotal(date = new Date().toISOString().slice(0, 10)) {
@@ -66,5 +71,15 @@ export class WalletStore {
       if (seed?.status !== "confirmed" || !seed.recordedAt?.startsWith(date)) return total;
       return total + Number(seed.amountUsdc || 0);
     }, 0);
+  }
+
+  async withWriteLock(callback) {
+    const previous = this.writeQueue;
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    this.writeQueue = previous.then(() => gate);
+    await previous;
+    try { return await callback(); }
+    finally { release(); }
   }
 }

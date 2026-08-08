@@ -132,6 +132,17 @@ owner bootstrap and a separate controlled live-browser test. See the
 [architecture](docs/V1_4_ARCHITECTURE.md), and
 [live runbook](docs/V1_4_LIVE_RUNBOOK.md).
 
+## V1.5 public deployment preparation
+
+V1.5 hosts the proven `/try` journey without changing the protocol. The target
+architecture is a Cloudflare Pages frontend and a single paid Render Node
+service with a persistent disk for durable workflow and gas-seed records.
+Sandbox writes remain disabled until the hosted read-only, signer, origin,
+cookie, persistence, balance, budget, and kill-switch preflight passes.
+
+See the [public deployment specification](docs/PUBLIC_DEPLOYMENT.md). A public
+URL is not yet recorded, and this testnet milestone is not production-ready.
+
 ## Repository structure
 
 ```text
@@ -148,6 +159,7 @@ fidra/
 │   ├── V1_PRODUCT_SPEC.md
 │   ├── V1_ARCHITECTURE.md
 │   ├── V1_1_ARC_TESTNET_DEPLOYMENT.md
+│   ├── PUBLIC_DEPLOYMENT.md
 │   └── V1_2_*.md
 ├── deployments/
 ├── server/     # Circle worker boundary plus isolated legacy V0 endpoints

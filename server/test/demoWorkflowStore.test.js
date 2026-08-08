@@ -53,6 +53,18 @@ test("daily certified face total supports the global demo budget", async () => {
   assert.equal(await value.dailyCertifiedFaceTotal(), 100000n);
 });
 
+test("concurrent workflow writes preserve both users", async () => {
+  const { value } = await store();
+  const [first, second] = await Promise.all([
+    value.createOrGet({ userRef: "concurrent-a", worker: `0x${"5".repeat(40)}`, platformId: 3 }),
+    value.createOrGet({ userRef: "concurrent-b", worker: `0x${"6".repeat(40)}`, platformId: 3 }),
+  ]);
+  const persisted = await value.readAll();
+  assert.equal(Object.keys(persisted.workflows).length, 2);
+  assert.ok(persisted.workflows[first.id]);
+  assert.ok(persisted.workflows[second.id]);
+});
+
 test("request limiter enforces wallet, user, session and IP keys atomically per window", () => {
   let now = 1_000;
   const limiter = new RequestLimiter({ limit: 2, windowMs: 100, now: () => now });

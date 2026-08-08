@@ -1,4 +1,5 @@
 import { getAddress } from "viem";
+import { resolve } from "node:path";
 
 const DEFAULTS = Object.freeze({
   arcChainId: 5_042_002,
@@ -38,10 +39,39 @@ function addressValue(value, fallback) {
 }
 
 function splitOrigins(value) {
-  return new Set((value || "http://localhost:5173,http://127.0.0.1:5173")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean));
+  const allowed = new Set();
+  const invalid = [];
+  for (const candidate of (value || "http://localhost:5173,http://127.0.0.1:5173").split(",")) {
+    const raw = candidate.trim();
+    if (!raw) continue;
+    try {
+      const parsed = new URL(raw);
+      if (!["http:", "https:"].includes(parsed.protocol)
+        || parsed.username || parsed.password
+        || parsed.pathname !== "/" || parsed.search || parsed.hash
+        || raw === "*") {
+        invalid.push(raw);
+        continue;
+      }
+      allowed.add(parsed.origin);
+    } catch {
+      invalid.push(raw);
+    }
+  }
+  return { allowed, invalid };
+}
+
+function sameSiteValue(value) {
+  const normalized = String(value || "Lax").trim().toLowerCase();
+  if (normalized === "strict") return "Strict";
+  if (normalized === "none") return "None";
+  return "Lax";
+}
+
+function runtimeFile(explicitFile, runtimeDirectory, name, fallback) {
+  if (explicitFile?.trim()) return explicitFile.trim();
+  if (runtimeDirectory?.trim()) return resolve(runtimeDirectory.trim(), name);
+  return fallback;
 }
 
 export function createConfig(env = process.env) {
@@ -51,6 +81,13 @@ export function createConfig(env = process.env) {
   const seedAmountUsdc = positiveNumber(env.WORKER_GAS_SEED_USDC ?? env.VENDOR_GAS_SEED_USDC, 0.04);
   const maxSeedAmountUsdc = positiveNumber(env.MAX_WORKER_GAS_SEED_USDC ?? env.MAX_VENDOR_GAS_SEED_USDC, 0.05);
   const sandboxWritesEnabled = booleanValue(env.SANDBOX_WRITES_ENABLED, false);
+  const secureCookies = booleanValue(env.SESSION_COOKIE_SECURE, env.NODE_ENV === "production");
+  const cookieSameSite = sameSiteValue(env.SESSION_COOKIE_SAME_SITE);
+  const requestedSameSite = String(env.SESSION_COOKIE_SAME_SITE || "Lax").trim().toLowerCase();
+  const { allowed: allowedOrigins, invalid: invalidOrigins } = splitOrigins(env.SERVER_ALLOWED_ORIGINS);
+  const sessionBoundaryConfigured = invalidOrigins.length === 0
+    && ["lax", "strict", "none"].includes(requestedSameSite)
+    && !(cookieSameSite === "None" && !secureCookies);
   const walletMissingKeys = [
     ["CIRCLE_API_KEY", env.CIRCLE_API_KEY],
     ["CIRCLE_APP_ID", env.CIRCLE_APP_ID],
@@ -63,8 +100,12 @@ export function createConfig(env = process.env) {
   if (seedAmountUsdc > maxSeedAmountUsdc) configurationErrors.push("WORKER_GAS_SEED_USDC exceeds MAX_WORKER_GAS_SEED_USDC.");
   if (sandboxWritesEnabled && !env.SANDBOX_PLATFORM_PRIVATE_KEY?.trim()) configurationErrors.push("SANDBOX_PLATFORM_PRIVATE_KEY is required when sandbox writes are enabled.");
   if (sandboxWritesEnabled && !positiveInteger(env.SANDBOX_PLATFORM_ID, 0)) configurationErrors.push("SANDBOX_PLATFORM_ID is required when sandbox writes are enabled.");
+  if (invalidOrigins.length) configurationErrors.push(`SERVER_ALLOWED_ORIGINS contains invalid origins: ${invalidOrigins.join(", ")}.`);
+  if (!["lax", "strict", "none"].includes(requestedSameSite)) configurationErrors.push("SESSION_COOKIE_SAME_SITE must be Lax, Strict, or None.");
+  if (cookieSameSite === "None" && !secureCookies) configurationErrors.push("SESSION_COOKIE_SAME_SITE=None requires SESSION_COOKIE_SECURE=true.");
 
   return Object.freeze({
+    host: env.HOST?.trim() || "0.0.0.0",
     port: positiveInteger(env.PORT, 8787),
     circleBaseUrl: "https://api.circle.com",
     circleEnvironment: env.CIRCLE_ENV?.trim() || "sandbox",
@@ -74,7 +115,7 @@ export function createConfig(env = process.env) {
     walletsEnabled,
     mockMode,
     walletMissingKeys,
-    walletsConfigured: walletsEnabled && !mockMode && walletMissingKeys.length === 0,
+    walletsConfigured: walletsEnabled && !mockMode && walletMissingKeys.length === 0 && sessionBoundaryConfigured,
     gasSeedEnabled,
     seedPrivateKey: env.OPERATOR_SEED_PRIVATE_KEY?.trim() || "",
     seedAmountUsdc,
@@ -83,7 +124,7 @@ export function createConfig(env = process.env) {
     seedDailyBudgetUsdc: positiveNumber(env.WORKER_GAS_DAILY_BUDGET_USDC, 2),
     seedWalletReserveUsdc: positiveNumber(env.WORKER_GAS_WALLET_RESERVE_USDC, 0.2),
     seedMissingKeys,
-    gasSeedConfigured: gasSeedEnabled && seedMissingKeys.length === 0 && seedAmountUsdc <= maxSeedAmountUsdc,
+    gasSeedConfigured: gasSeedEnabled && seedMissingKeys.length === 0 && seedAmountUsdc <= maxSeedAmountUsdc && sessionBoundaryConfigured,
     configurationErrors,
     arcChainId: positiveInteger(env.ARC_CHAIN_ID, DEFAULTS.arcChainId),
     arcRpcUrl: env.ARC_RPC_URL?.trim() || DEFAULTS.arcRpcUrl,
@@ -109,13 +150,22 @@ export function createConfig(env = process.env) {
     sandboxRequestLimit: positiveInteger(env.SANDBOX_REQUESTS_PER_MINUTE, 12),
     arcVerificationTimeoutMs: positiveInteger(env.ARC_VERIFICATION_TIMEOUT_SECONDS, 120) * 1000,
     sessionTtlMs: positiveInteger(env.SESSION_TTL_SECONDS, 86_400) * 1000,
-    secureCookies: booleanValue(env.SESSION_COOKIE_SECURE, env.NODE_ENV === "production"),
-    allowedOrigins: splitOrigins(env.SERVER_ALLOWED_ORIGINS),
-    metadataFile: env.WORKER_WALLET_METADATA_FILE?.trim()
-      || env.VENDOR_WALLET_METADATA_FILE?.trim()
-      || new URL("../data/worker-wallets.json", import.meta.url),
-    demoWorkflowFile: env.DEMO_WORKFLOW_FILE?.trim()
-      || new URL("../data/demo-workflows.json", import.meta.url),
+    secureCookies,
+    cookieSameSite,
+    allowedOrigins,
+    runtimeDataDirectory: env.FIDRA_RUNTIME_DATA_DIR?.trim() || "",
+    metadataFile: runtimeFile(
+      env.WORKER_WALLET_METADATA_FILE || env.VENDOR_WALLET_METADATA_FILE,
+      env.FIDRA_RUNTIME_DATA_DIR,
+      "worker-wallets.json",
+      new URL("../data/worker-wallets.json", import.meta.url),
+    ),
+    demoWorkflowFile: runtimeFile(
+      env.DEMO_WORKFLOW_FILE,
+      env.FIDRA_RUNTIME_DATA_DIR,
+      "demo-workflows.json",
+      new URL("../data/demo-workflows.json", import.meta.url),
+    ),
   });
 }
 

@@ -46,10 +46,10 @@ export function parseCookies(header = "") {
   }));
 }
 
-export function sessionCookie(session, secure) {
-  return `${SESSION_COOKIE}=${encodeURIComponent(session.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor((session.expiresAt - Date.now()) / 1000)}${secure ? "; Secure" : ""}`;
+export function sessionCookie(session, secure, sameSite = "Lax") {
+  return `${SESSION_COOKIE}=${encodeURIComponent(session.id)}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${Math.floor((session.expiresAt - Date.now()) / 1000)}${secure ? "; Secure" : ""}`;
 }
 
-export function clearSessionCookie(secure) {
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure ? "; Secure" : ""}`;
+export function clearSessionCookie(secure, sameSite = "Lax") {
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=0${secure ? "; Secure" : ""}`;
 }

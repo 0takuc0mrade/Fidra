@@ -30,6 +30,11 @@ npm run dev
 
 The checked-in example contains only public Arc addresses and blank/non-secret client configuration. Circle secrets belong only in `server/.env` and never use a `VITE_` prefix.
 
+For Cloudflare Pages, use `web` as the project root, `npm run build` as the
+build command, and `dist` as the output directory. Set `VITE_API_BASE_URL` to
+the exact public HTTPS API origin. The checked-in `_redirects` rule sends direct
+SPA routes such as `/try` and `/worker/claims/:id` to `index.html`.
+
 ## Worker transaction boundary
 
 The web app uses Circle's official SDK for email OTP or configured Google authentication, EOA creation, and worker approval. It sends the public claim ID and minimum quote to the Fidra server. The server creates the challenge and returns an operation ID; after SDK approval, the browser binds Circle's transaction ID and polls the operation.

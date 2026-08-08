@@ -12,6 +12,7 @@ export class DemoWorkflowStore {
     this.file = pathValue(file);
     this.now = now;
     this.locks = new Map();
+    this.writeQueue = Promise.resolve();
   }
 
   async readAll() {
@@ -27,19 +28,21 @@ export class DemoWorkflowStore {
   }
 
   async createOrGet({ userRef, worker, platformId }) {
-    const data = await this.readAll();
-    const current = Object.values(data.workflows).find((item) => item.userRef === userRef && !["complete", "cancelled"].includes(item.state));
-    if (current) return current;
-    const id = randomUUID();
-    const timestamp = this.now();
-    const workflow = {
-      id, userRef, worker, platformId, state: "wallet_ready", error: null,
-      task: null, gasFunding: null, claim: null, advance: null, settlement: null,
-      createdAt: timestamp, updatedAt: timestamp,
-    };
-    data.workflows[id] = workflow;
-    await this.writeAll(data);
-    return workflow;
+    return this.withWriteLock(async () => {
+      const data = await this.readAll();
+      const current = Object.values(data.workflows).find((item) => item.userRef === userRef && !["complete", "cancelled"].includes(item.state));
+      if (current) return current;
+      const id = randomUUID();
+      const timestamp = this.now();
+      const workflow = {
+        id, userRef, worker, platformId, state: "wallet_ready", error: null,
+        task: null, gasFunding: null, claim: null, advance: null, settlement: null,
+        createdAt: timestamp, updatedAt: timestamp,
+      };
+      data.workflows[id] = workflow;
+      await this.writeAll(data);
+      return workflow;
+    });
   }
 
   async get(id) { return (await this.readAll()).workflows[id] ?? null; }
@@ -61,11 +64,23 @@ export class DemoWorkflowStore {
   }
 
   async update(id, values) {
-    const data = await this.readAll();
-    if (!data.workflows[id]) return null;
-    data.workflows[id] = { ...data.workflows[id], ...values, updatedAt: this.now() };
-    await this.writeAll(data);
-    return data.workflows[id];
+    return this.withWriteLock(async () => {
+      const data = await this.readAll();
+      if (!data.workflows[id]) return null;
+      data.workflows[id] = { ...data.workflows[id], ...values, updatedAt: this.now() };
+      await this.writeAll(data);
+      return data.workflows[id];
+    });
+  }
+
+  async withWriteLock(callback) {
+    const previous = this.writeQueue;
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    this.writeQueue = previous.then(() => gate);
+    await previous;
+    try { return await callback(); }
+    finally { release(); }
   }
 
   async withLock(id, callback) {
