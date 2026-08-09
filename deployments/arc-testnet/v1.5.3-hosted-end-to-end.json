@@ -1,0 +1,240 @@
+{
+  "artifactVersion": "1.0",
+  "milestone": "Fidra V1.5.3 - Hosted End-to-End Submission Validation",
+  "status": "live-confirmed",
+  "recordedAt": "2026-08-09T17:56:09Z",
+  "scope": "Arc Testnet public sandbox",
+  "hosting": {
+    "frontend": "https://fidra-arc.vercel.app",
+    "demo": "https://fidra-arc.vercel.app/try",
+    "backend": "https://fidra.onrender.com",
+    "healthAtValidation": "healthy",
+    "databaseAtValidation": "configured-reachable-schema-ready",
+    "circleAtValidation": "configured-arc-testnet-eoa"
+  },
+  "git": {
+    "branch": "main",
+    "freezeCommit": "70ed9eb6d7d81e125921380a2b2e7568fd489564",
+    "freezeTag": "fidra-v1.5-hackathon",
+    "contractsChangedForHostedMilestone": false
+  },
+  "network": {
+    "name": "Arc Testnet",
+    "chainId": 5042002,
+    "explorer": "https://testnet.arcscan.app",
+    "nativeGasAsset": "USDC",
+    "canonicalUsdc": "0x3600000000000000000000000000000000000000"
+  },
+  "contracts": {
+    "platformRegistry": "0x20EcB05d90D4F24F8Fcf2785BdE240796B8b1af3",
+    "earningsManager": "0xdC1C359fC174Fb8C7cDcbE0e09447d123dD9cD57",
+    "advanceVaultV2": "0x12604e5acD074D3499C9ac4D2cbb4Bd39ECE49c5",
+    "sourceVerified": true,
+    "legacyV0Modified": false
+  },
+  "sandbox": {
+    "platform": {
+      "id": 3,
+      "settlementWallet": "0x1B78a83bFB189169D12fA1c0f9f64EaF2e690C36",
+      "activeAfterJourney": true,
+      "creditLimitUnits": "500000",
+      "reserveBeforeUnits": "100000",
+      "reserveAfterUnits": "100000",
+      "advanceFeeBps": 100,
+      "exposureLifecycleUnits": ["0", "100000", "0"]
+    },
+    "gasFunder": {
+      "address": "0x7b5d517F540B3a1d23B5AFD6b63e5B7f5c420F07",
+      "balanceBeforeJourneyUsdc": "0.259575800000000000",
+      "balanceAfterJourneyUsdc": "0.219134800000000000",
+      "reserveFloorUsdc": "0.05"
+    },
+    "limits": {
+      "claimFaceValueUsdc": "0.10",
+      "claimFaceValueUnits": "100000",
+      "maximumClaimFaceValueUnits": "100000",
+      "gasSeedUsdc": "0.04",
+      "maximumGasSeedUsdc": "0.05",
+      "seedOncePerWallet": true,
+      "dailyGasBudgetUsdc": "0.20",
+      "globalClaimBudgetUsdc": "0.50",
+      "rateLimitEnabled": true
+    },
+    "killSwitch": {
+      "implemented": true,
+      "deterministicFailClosedTest": "passed",
+      "hostedExercise": "deferred to keep the public sandbox available",
+      "stateAfterValidation": "writes and gas seeding left enabled by operator choice"
+    }
+  },
+  "browserJourney": {
+    "executionBoundary": "hosted browser only",
+    "terminalIntervention": false,
+    "metamaskUsed": false,
+    "manualWalletAddressEntry": false,
+    "manualClaimCreation": false,
+    "manualCertification": false,
+    "manualGasFunding": false,
+    "manualSettlement": false,
+    "finalWorkflowState": "complete",
+    "worker": {
+      "address": "0x5e41d176C9be58F7b8EB2E7B17B08A8Ce17Cf8c0",
+      "walletProvider": "Circle User-Controlled Wallets",
+      "network": "ARC-TESTNET",
+      "accountType": "EOA",
+      "protocolRoles": []
+    },
+    "task": {
+      "externalTaskId": "fidra-v1.4-demo-a3dd0fba-7ed8-4605-8ff2-1061cb08294f",
+      "taskHash": "0xfa4b04c6fa9334c32beab3667499c34edfd04aa85e0d892aefcae832cfad3a02",
+      "evidenceHash": "0x79e08fdda50369397034a91813b357b9978a09e011c94bb618c4f8beeefc84e2"
+    },
+    "claim": {
+      "id": 8,
+      "platformId": 3,
+      "worker": "0x5e41d176C9be58F7b8EB2E7B17B08A8Ce17Cf8c0",
+      "faceValueUnits": "100000",
+      "advanceUnits": "99000",
+      "feeUnits": "1000",
+      "dueDate": "1786900363",
+      "finalClaimStatus": "Settled",
+      "finalPurchaseStatus": "Settled",
+      "platformSettlementUnits": "100000",
+      "realizedProfitUnits": "1000"
+    },
+    "transactions": {
+      "gasSeed": {
+        "hash": "0x5a2a960d6c44b8d93375adfe240b0738586c903dd93a81e46722055e4d351fef",
+        "blockNumber": 56143671,
+        "from": "0x7b5d517F540B3a1d23B5AFD6b63e5B7f5c420F07",
+        "to": "0x5e41d176C9be58F7b8EB2E7B17B08A8Ce17Cf8c0",
+        "amountUsdc": "0.04",
+        "url": "https://testnet.arcscan.app/tx/0x5a2a960d6c44b8d93375adfe240b0738586c903dd93a81e46722055e4d351fef"
+      },
+      "claimCreation": {
+        "hash": "0x4febbc694100c1a644d7099a950a09a73331cc6ab5c450105e175450929dee71",
+        "blockNumber": 56143874,
+        "from": "0x1B78a83bFB189169D12fA1c0f9f64EaF2e690C36",
+        "to": "0xdC1C359fC174Fb8C7cDcbE0e09447d123dD9cD57",
+        "url": "https://testnet.arcscan.app/tx/0x4febbc694100c1a644d7099a950a09a73331cc6ab5c450105e175450929dee71"
+      },
+      "claimCertification": {
+        "hash": "0xa20b8178d23f0b6303df579ffd3d8a4538248ae69c54b3b74117f64af54c5ab4",
+        "blockNumber": 56143884,
+        "from": "0x1B78a83bFB189169D12fA1c0f9f64EaF2e690C36",
+        "to": "0xdC1C359fC174Fb8C7cDcbE0e09447d123dD9cD57",
+        "url": "https://testnet.arcscan.app/tx/0xa20b8178d23f0b6303df579ffd3d8a4538248ae69c54b3b74117f64af54c5ab4"
+      },
+      "workerAdvance": {
+        "hash": "0x7d166316f50f08429d991481b00ca8b907234d42ae5d8092515931d3898ef9c5",
+        "blockNumber": 56144158,
+        "from": "0x5e41d176C9be58F7b8EB2E7B17B08A8Ce17Cf8c0",
+        "to": "0x12604e5acD074D3499c9ac4D2cbb4Bd39ECE49c5",
+        "gasUsed": "368078",
+        "effectiveGasPrice": "31605000000",
+        "workerGasCostNativeUsdc": "0.011633105190000000",
+        "url": "https://testnet.arcscan.app/tx/0x7d166316f50f08429d991481b00ca8b907234d42ae5d8092515931d3898ef9c5"
+      },
+      "settlementApproval": {
+        "hash": "0x977cc6197104af8f78befe87a22c1a4d66c276be7d9b233d79425e584a9aa8ef",
+        "blockNumber": 56144177,
+        "from": "0x1B78a83bFB189169D12fA1c0f9f64EaF2e690C36",
+        "to": "0x3600000000000000000000000000000000000000",
+        "url": "https://testnet.arcscan.app/tx/0x977cc6197104af8f78befe87a22c1a4d66c276be7d9b233d79425e584a9aa8ef"
+      },
+      "platformSettlement": {
+        "hash": "0xf7afa70a0da1e0f1e68c0313310b394dd9f1e530d4cd224fdaf4c10c83f450c6",
+        "blockNumber": 56144186,
+        "from": "0x1B78a83bFB189169D12fA1c0f9f64EaF2e690C36",
+        "to": "0x12604e5acD074D3499C9ac4D2cbb4Bd39ECE49c5",
+        "amountUnits": "100000",
+        "url": "https://testnet.arcscan.app/tx/0xf7afa70a0da1e0f1e68c0313310b394dd9f1e530d4cd224fdaf4c10c83f450c6"
+      }
+    }
+  },
+  "workerAccounting": {
+    "initialBalanceUsdc": "0.000000000000000000",
+    "gasSeedUsdc": "0.040000000000000000",
+    "grossAdvanceUsdc": "0.099000000000000000",
+    "advanceTransactionGasUsdc": "0.011633105190000000",
+    "netAdvanceAfterWorkerGasUsdc": "0.087366894810000000",
+    "finalBalanceUsdc": "0.127366894810000000",
+    "workerRepaymentObligation": "none"
+  },
+  "vaultAccounting": {
+    "beforeJourney": {
+      "accountedCash": "2441000",
+      "actualCash": "2441000",
+      "accountedAssets": "2441000",
+      "outstandingPrincipal": "0",
+      "outstandingFaceValue": "0",
+      "totalAdvancePrincipal": "4059000",
+      "totalSettledFaceValue": "3100000",
+      "totalRealizedProfit": "31000"
+    },
+    "afterAdvance": {
+      "accountedCash": "2342000",
+      "actualCash": "2342000",
+      "accountedAssets": "2441000",
+      "outstandingPrincipal": "99000",
+      "outstandingFaceValue": "100000",
+      "totalAdvancePrincipal": "4158000",
+      "totalSettledFaceValue": "3100000",
+      "totalRealizedProfit": "31000"
+    },
+    "afterSettlement": {
+      "accountedCash": "2442000",
+      "actualCash": "2442000",
+      "accountedAssets": "2442000",
+      "outstandingPrincipal": "0",
+      "outstandingFaceValue": "0",
+      "totalAdvancePrincipal": "4158000",
+      "totalSettledFaceValue": "3200000",
+      "totalDefaultRecoveries": "400000",
+      "totalRealizedProfit": "32000",
+      "totalRealizedLoss": "590000",
+      "totalContractualShortfall": "600000",
+      "netLiquidityContributed": "3000000"
+    },
+    "cashReconciled": true,
+    "realizedProfitIncreaseUnits": "1000"
+  },
+  "recoveryAndIdempotency": {
+    "postGasSeedRefresh": "passed; the same funding receipt and next workflow stage were restored without another seed",
+    "postCertificationRefresh": "passed; claim 8, quote, and original receipts were restored without another claim",
+    "postCompletionRefresh": "passed; the completed workflow and original receipts were restored without another financial action",
+    "renderRestartRecovery": "passed; claim 8 and the complete receipt history restored from Neon after service restart",
+    "duplicateGasSeed": "none observed",
+    "duplicateClaim": "none observed",
+    "duplicateCertification": "none observed",
+    "duplicateCircleChallenge": "none observed",
+    "duplicateAdvance": "none observed",
+    "duplicateSettlement": "none observed"
+  },
+  "validation": {
+    "foundry": "passed",
+    "serverDeterministicTests": "52 passed, 0 failed, 8 integration tests skipped in deterministic run",
+    "neonIntegrationTests": "8 passed, 0 failed",
+    "webTests": "4 files passed",
+    "webProductionBuild": "passed",
+    "directTryRefresh": "passed",
+    "exactOriginCors": "passed",
+    "trackedAndArtifactSecretScan": "passed"
+  },
+  "secretSafety": {
+    "emailRecorded": false,
+    "otpRecorded": false,
+    "circleApiKeyRecorded": false,
+    "circleTokensRecorded": false,
+    "smtpCredentialsRecorded": false,
+    "databaseUrlRecorded": false,
+    "privateKeysRecorded": false,
+    "ipAddressesRecorded": false,
+    "sessionObjectsRecorded": false
+  },
+  "notes": [
+    "This artifact is a point-in-time snapshot of claim 8. The public sandbox remained enabled after validation, so later public workflows may change aggregate balances and counters.",
+    "The protocol owner key is absent from hosted runtime configuration; dedicated bounded platform and gas-funder signers are used for the public sandbox.",
+    "The worker payout was final before platform settlement and the worker never became a settlement payer."
+  ]
+}
