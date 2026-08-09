@@ -138,23 +138,28 @@ function corsHeaders(request, config) {
 }
 
 export function createApp(config, overrides = {}) {
+  const storage = overrides.storage ?? null;
+  if (config.databaseConfigured && !storage
+    && !overrides.walletStore && !overrides.workflowStore && !overrides.operationStore) {
+    throw new Error("Configured Postgres storage must be initialized before creating the app.");
+  }
   const sessionStore = overrides.sessionStore ?? new SessionStore({ ttlMs: config.sessionTtlMs });
-  const walletStore = overrides.walletStore ?? new WalletStore(config.metadataFile);
+  const walletStore = overrides.walletStore ?? storage?.walletStore ?? new WalletStore(config.metadataFile);
   const circleClient = overrides.circleClient ?? new CircleClient(config);
   const gasSeedService = overrides.gasSeedService ?? new GasSeedService(config, walletStore);
   const chainReads = overrides.chainReads ?? new ChainReads(config);
   const v1ChainReads = overrides.v1ChainReads ?? new V1ChainReads(config);
-  const operationStore = overrides.operationStore ?? new OperationStore();
-  const workflowStore = overrides.workflowStore ?? new DemoWorkflowStore(config.demoWorkflowFile);
+  const operationStore = overrides.operationStore ?? storage?.operationStore ?? new OperationStore();
+  const workflowStore = overrides.workflowStore ?? storage?.workflowStore ?? new DemoWorkflowStore(config.demoWorkflowFile);
   const sandboxService = overrides.sandboxService ?? new SandboxPlatformService(config);
-  const requestLimiter = overrides.requestLimiter ?? new RequestLimiter({ limit: config.sandboxRequestLimit });
+  const requestLimiter = overrides.requestLimiter ?? storage?.requestLimiter ?? new RequestLimiter({ limit: config.sandboxRequestLimit });
   let lastCircleError = null;
 
   async function loadWallet(session) {
     const wallets = await circleClient.listWallets(session.userToken);
     const wallet = findArcEoa(wallets);
     if (!wallet) return null;
-    const walletMetadata = await walletStore.upsert(wallet, session.circleUserId);
+    const walletMetadata = await walletStore.upsert(wallet, hashReference(session.circleUserId));
     sessionStore.update(session.id, { wallet, walletMetadata, pendingChallengeId: null, walletIdempotencyKey: null });
     return { wallet, walletMetadata };
   }
@@ -176,7 +181,15 @@ export function createApp(config, overrides = {}) {
 
     try {
       if (route === "GET /api/health") {
-        json(response, 200, { status: "ok" }, headers);
+        const database = storage
+          ? await storage.health()
+          : { configured: config.databaseConfigured, reachable: false, schemaReady: false };
+        const ready = !config.databaseConfigured || (database.reachable && database.schemaReady);
+        json(response, ready ? 200 : 503, {
+          status: ready ? "ok" : "unavailable",
+          process: { healthy: true },
+          database,
+        }, headers);
         return;
       }
 
@@ -336,7 +349,7 @@ export function createApp(config, overrides = {}) {
           return;
         }
         const requestKeyHash = hashReference([session.id, session.circleUserId, session.emailHash, found.wallet.address, request.socket?.remoteAddress].join(":"));
-        if (!requestLimiter.consume([
+        if (!await requestLimiter.consume([
           `seed:session:${session.id}`, `seed:user:${session.circleUserId}`,
           `seed:email:${session.emailHash}`, `seed:wallet:${found.wallet.address}`,
           `seed:ip:${request.socket?.remoteAddress}`,
@@ -384,7 +397,7 @@ export function createApp(config, overrides = {}) {
         const workflow = await workflowStore.createOrGet({ userRef, worker: found.wallet.address, platformId: config.sandboxPlatformId });
         const keys = [session.id, session.circleUserId, session.emailHash, found.wallet.address, request.socket?.remoteAddress]
           .map((key) => key ? `demo-gas:${hashReference(key)}` : null);
-        if (!requestLimiter.consume(keys)) throw new GasSeedError("The demo gas request is rate limited.", 429);
+        if (!await requestLimiter.consume(keys)) throw new GasSeedError("The demo gas request is rate limited.", 429);
         let seed;
         try {
           seed = await workflowStore.withLock(workflow.id, async () => {
@@ -410,20 +423,37 @@ export function createApp(config, overrides = {}) {
         if (!found?.wallet) throw new SandboxPlatformError("wallet_required", "A Circle Arc wallet is required.", 409);
         const userRef = hashReference(session.circleUserId);
         const workflow = await workflowStore.createOrGet({ userRef, worker: found.wallet.address, platformId: config.sandboxPlatformId });
-        if (!requestLimiter.consume([`demo-task:user:${userRef}`, `demo-task:ip:${request.socket?.remoteAddress}`])) {
+        if (!await requestLimiter.consume([`demo-task:user:${userRef}`, `demo-task:ip:${request.socket?.remoteAddress}`])) {
           throw new SandboxPlatformError("rate_limited", "Demo task creation is rate limited.", 429);
         }
         let completed;
         try { completed = await workflowStore.withLock("global:demo-task-budget", async () => {
           let current = await workflowStore.get(workflow.id);
-          if (current.claim?.certifyReceipt) return current;
+          if (current.claim?.certifyReceipt) {
+            if (typeof workflowStore.markBudgetReservation === "function") {
+              await workflowStore.markBudgetReservation({ budgetType: "demo_claim", reservationKey: current.id, status: "confirmed" });
+            }
+            return current;
+          }
           if (!current.gasFunding || !["confirmed", "not_needed", "already_seeded"].includes(current.gasFunding.status)) {
             throw new SandboxPlatformError("gas_preparation_required", "Prepare the authenticated worker's Arc gas before completing the demo task.");
           }
-          const globalClaimUnits = await workflowStore.dailyCertifiedFaceTotal();
           const globalBudgetUnits = BigInt(Math.floor(config.sandboxGlobalBudgetUsdc * 1_000_000));
-          if (globalClaimUnits + BigInt(config.sandboxClaimFaceValue) > globalBudgetUnits) {
-            throw new SandboxPlatformError("global_budget_reached", "The daily public demo claim budget has been reached.", 429);
+          if (typeof workflowStore.reserveBudget === "function") {
+            const reservation = await workflowStore.reserveBudget({
+              budgetType: "demo_claim",
+              reservationKey: current.id,
+              amountUnits: BigInt(config.sandboxClaimFaceValue),
+              limitUnits: globalBudgetUnits,
+            });
+            if (!reservation.reserved) {
+              throw new SandboxPlatformError("global_budget_reached", "The daily public demo claim budget has been reached.", 429);
+            }
+          } else {
+            const globalClaimUnits = await workflowStore.dailyCertifiedFaceTotal();
+            if (globalClaimUnits + BigInt(config.sandboxClaimFaceValue) > globalBudgetUnits) {
+              throw new SandboxPlatformError("global_budget_reached", "The daily public demo claim budget has been reached.", 429);
+            }
           }
           const task = sandboxService.task(current);
           await workflowStore.update(current.id, { task: { ...task, completedAt: new Date().toISOString() }, state: "task_complete", error: null });
@@ -431,7 +461,11 @@ export function createApp(config, overrides = {}) {
           const claim = current.claim?.id ? current.claim : await sandboxService.createClaim(current);
           await workflowStore.update(current.id, { claim, state: "claim_created" });
           const certified = await sandboxService.certifyClaim(claim);
-          return workflowStore.update(current.id, { claim: certified, state: "claim_certified", error: null });
+          const result = await workflowStore.update(current.id, { claim: certified, state: "claim_certified", error: null });
+          if (typeof workflowStore.markBudgetReservation === "function") {
+            await workflowStore.markBudgetReservation({ budgetType: "demo_claim", reservationKey: current.id, status: "confirmed" });
+          }
+          return result;
         }); } catch (error) {
           await workflowStore.update(workflow.id, { error: { stage: "task", message: error.message, at: new Date().toISOString() } });
           throw error;
@@ -490,8 +524,10 @@ export function createApp(config, overrides = {}) {
         const userRef = hashReference(session.circleUserId);
         const demoWorkflow = await workflowStore.findForUser(userRef);
         if (demoWorkflow?.claim?.id === String(claimId) && demoWorkflow.advance?.operationId) {
-          const restored = operationStore.restore({
-            id: demoWorkflow.advance.operationId, sessionId: session.id,
+          const restored = await operationStore.restore({
+            id: demoWorkflow.advance.operationId, ownerRef: userRef,
+            workflowId: demoWorkflow.id, operationType: "purchase_advance",
+            idempotencyKey: demoWorkflow.advance.idempotencyKey,
             challengeId: demoWorkflow.advance.challengeId, transactionId: demoWorkflow.advance.transactionId ?? null,
             worker: demoWorkflow.worker, claimId: String(claimId), platformId: String(demoWorkflow.platformId),
             faceValue: demoWorkflow.claim.faceValue, advanceAmount: demoWorkflow.advance.advanceAmount,
@@ -499,45 +535,63 @@ export function createApp(config, overrides = {}) {
             advanceFeeBps: demoWorkflow.advance.advanceFeeBps, dueDate: demoWorkflow.claim.dueDate,
             quotedAtBlock: demoWorkflow.advance.quotedAtBlock,
           });
-          json(response, 200, { status: restored.status, operationId: restored.id, challengeId: restored.challengeId,
-            claimId: restored.claimId, platformId: restored.platformId, worker: restored.worker,
-            faceValue: restored.faceValue, advanceAmount: restored.advanceAmount, feeAmount: restored.feeAmount,
-            minimumAdvanceAmount: restored.minimumAdvanceAmount, advanceFeeBps: restored.advanceFeeBps,
-            dueDate: restored.dueDate, quotedAtBlock: restored.quotedAtBlock,
-            contractAddress: config.v1AdvanceVaultAddress }, headers);
-          return;
+          if (!["transaction_failed", "transaction_timed_out"].includes(restored.status)) {
+            json(response, 200, { status: restored.status, operationId: restored.id, challengeId: restored.challengeId,
+              claimId: restored.claimId, platformId: restored.platformId, worker: restored.worker,
+              faceValue: restored.faceValue, advanceAmount: restored.advanceAmount, feeAmount: restored.feeAmount,
+              minimumAdvanceAmount: restored.minimumAdvanceAmount, advanceFeeBps: restored.advanceFeeBps,
+              dueDate: restored.dueDate, quotedAtBlock: restored.quotedAtBlock,
+              contractAddress: config.v1AdvanceVaultAddress }, headers);
+            return;
+          }
         }
-        const challenge = await circleClient.createContractExecutionChallenge(session.userToken, {
-          idempotencyKey: randomUUID(),
-          walletId: wallet.id,
-          contractAddress: config.v1AdvanceVaultAddress,
-          abiFunctionSignature: PURCHASE_ADVANCE_ABI_SIGNATURE,
-          abiParameters: [String(claimId)],
-          refId: `fidra_v1_advance_${claimId}`,
+        const operation = await workflowStore.withLock(`circle-advance:${claimId}`, async () => {
+          const currentWorkflow = await workflowStore.findForUser(userRef);
+          if (currentWorkflow?.claim?.id === String(claimId) && currentWorkflow.advance?.operationId) {
+            const currentOperation = await operationStore.get(currentWorkflow.advance.operationId, userRef);
+            if (currentOperation?.challengeId) return currentOperation;
+          }
+          let reserved = await operationStore.create({
+            ownerRef: userRef,
+            workflowId: currentWorkflow?.claim?.id === String(claimId) ? currentWorkflow.id : null,
+            operationType: "purchase_advance",
+            idempotencyKey: randomUUID(),
+            status: "creating_challenge",
+            challengeId: null,
+            worker: wallet.address,
+            claimId: String(claimId),
+            platformId: snapshot.claim.platformId.toString(),
+            faceValue: snapshot.claim.faceValue.toString(),
+            advanceAmount: quote.advanceAmount.toString(),
+            feeAmount: quote.feeAmount.toString(),
+            minimumAdvanceAmount: quote.minimumAdvanceAmount.toString(),
+            advanceFeeBps: snapshot.platform.advanceFeeBps.toString(),
+            dueDate: snapshot.claim.dueDate.toString(),
+            quotedAtBlock: snapshot.blockNumber.toString(),
+          });
+          if (!reserved.challengeId) {
+            const challenge = await circleClient.createContractExecutionChallenge(session.userToken, {
+              idempotencyKey: reserved.idempotencyKey,
+              walletId: wallet.id,
+              contractAddress: config.v1AdvanceVaultAddress,
+              abiFunctionSignature: PURCHASE_ADVANCE_ABI_SIGNATURE,
+              abiParameters: [String(claimId)],
+              refId: `fidra_v1_advance_${claimId}`,
+            });
+            if (!challenge.challengeId) throw Object.assign(new Error("Circle did not return a transaction challenge."), { status: 502 });
+            reserved = await operationStore.update(reserved.id, { status: "challenge_required", challengeId: challenge.challengeId });
+          }
+          if (currentWorkflow?.claim?.id === String(claimId)) {
+            await workflowStore.update(currentWorkflow.id, { state: "awaiting_approval", advance: {
+              operationId: reserved.id, idempotencyKey: reserved.idempotencyKey,
+              challengeId: reserved.challengeId, transactionId: null,
+              advanceAmount: reserved.advanceAmount, feeAmount: reserved.feeAmount,
+              minimumAdvanceAmount: reserved.minimumAdvanceAmount, advanceFeeBps: reserved.advanceFeeBps,
+              quotedAtBlock: reserved.quotedAtBlock, receipt: null,
+            } });
+          }
+          return reserved;
         });
-        if (!challenge.challengeId) throw Object.assign(new Error("Circle did not return a transaction challenge."), { status: 502 });
-        const operation = operationStore.create({
-          sessionId: session.id,
-          challengeId: challenge.challengeId,
-          worker: wallet.address,
-          claimId: String(claimId),
-          platformId: snapshot.claim.platformId.toString(),
-          faceValue: snapshot.claim.faceValue.toString(),
-          advanceAmount: quote.advanceAmount.toString(),
-          feeAmount: quote.feeAmount.toString(),
-          minimumAdvanceAmount: quote.minimumAdvanceAmount.toString(),
-          advanceFeeBps: snapshot.platform.advanceFeeBps.toString(),
-          dueDate: snapshot.claim.dueDate.toString(),
-          quotedAtBlock: snapshot.blockNumber.toString(),
-        });
-        if (demoWorkflow?.claim?.id === String(claimId)) {
-          await workflowStore.update(demoWorkflow.id, { state: "awaiting_approval", advance: {
-            operationId: operation.id, challengeId: operation.challengeId, transactionId: null,
-            advanceAmount: operation.advanceAmount, feeAmount: operation.feeAmount,
-            minimumAdvanceAmount: operation.minimumAdvanceAmount, advanceFeeBps: operation.advanceFeeBps,
-            quotedAtBlock: operation.quotedAtBlock, receipt: null,
-          } });
-        }
         lastCircleError = null;
         json(response, 200, {
           status: "challenge_required",
@@ -568,11 +622,14 @@ export function createApp(config, overrides = {}) {
         if (!transactionId || transactionId.length > 200 || transactionId.includes("/")) {
           throw Object.assign(new Error("A valid Circle transactionId is required."), { status: 400 });
         }
-        let existingOperation = operationStore.get(operationId, session.id);
+        const ownerRef = hashReference(session.circleUserId);
+        let existingOperation = await operationStore.get(operationId, ownerRef);
         if (!existingOperation) {
           const durable = await workflowStore.findByOperationId(operationId);
           if (durable?.userRef === hashReference(session.circleUserId)) {
-            existingOperation = operationStore.restore({ id: operationId, sessionId: session.id, challengeId: durable.advance.challengeId,
+            existingOperation = await operationStore.restore({ id: operationId, ownerRef, workflowId: durable.id,
+              operationType: "purchase_advance", idempotencyKey: durable.advance.idempotencyKey,
+              challengeId: durable.advance.challengeId,
               transactionId: durable.advance.transactionId, worker: durable.worker, claimId: durable.claim.id,
               platformId: String(durable.platformId), faceValue: durable.claim.faceValue,
               advanceAmount: durable.advance.advanceAmount, feeAmount: durable.advance.feeAmount,
@@ -580,17 +637,17 @@ export function createApp(config, overrides = {}) {
               dueDate: durable.claim.dueDate, quotedAtBlock: durable.advance.quotedAtBlock });
           }
         }
-        const bound = operationStore.bind(operationId, session.id, transactionId);
+        const bound = await operationStore.bind(operationId, ownerRef, transactionId);
         if (bound === null) {
           json(response, 404, { status: "operation_not_found", error: "The worker payout operation was not found." }, headers);
           return;
         }
-        const durable = await workflowStore.findByOperationId(operationId);
-        if (durable) await workflowStore.update(durable.id, { state: "arc_pending", advance: { ...durable.advance, transactionId } });
         if (bound === false) {
           json(response, 409, { status: "transaction_mismatch", error: "This payout operation is already bound to a different Circle transaction." }, headers);
           return;
         }
+        const durable = await workflowStore.findByOperationId(operationId);
+        if (durable) await workflowStore.update(durable.id, { state: "arc_pending", advance: { ...durable.advance, transactionId } });
         json(response, 200, { status: "transaction_pending", operationId, transactionId }, headers);
         return;
       }
@@ -599,11 +656,13 @@ export function createApp(config, overrides = {}) {
         const session = requireSession(request, response, sessionStore, { authenticated: true });
         if (!session) return;
         const operationId = decodeURIComponent(workerTransactionMatch[1]);
-        let operation = operationStore.get(operationId, session.id);
+        const ownerRef = hashReference(session.circleUserId);
+        let operation = await operationStore.get(operationId, ownerRef);
         if (!operation) {
           const durable = await workflowStore.findByOperationId(operationId);
-          if (durable?.userRef === hashReference(session.circleUserId)) operation = operationStore.restore({
-            id: operationId, sessionId: session.id, challengeId: durable.advance.challengeId,
+          if (durable?.userRef === ownerRef) operation = await operationStore.restore({
+            id: operationId, ownerRef, workflowId: durable.id, operationType: "purchase_advance",
+            idempotencyKey: durable.advance.idempotencyKey, challengeId: durable.advance.challengeId,
             transactionId: durable.advance.transactionId, worker: durable.worker, claimId: durable.claim.id,
             platformId: String(durable.platformId), faceValue: durable.claim.faceValue,
             advanceAmount: durable.advance.advanceAmount, feeAmount: durable.advance.feeAmount,
@@ -629,7 +688,7 @@ export function createApp(config, overrides = {}) {
         } catch (circleError) {
           try {
             const recovered = await v1ChainReads.recoverWorkerAdvance(operation);
-            operationStore.update(operation.id, { status: "transaction_confirmed", txHash: recovered.transactionHash });
+            await operationStore.update(operation.id, { status: "transaction_confirmed", txHash: recovered.transactionHash });
             const durable = await workflowStore.findByOperationId(operation.id);
             if (durable) await workflowStore.update(durable.id, { state: "advance_confirmed", advance: {
               ...durable.advance, transactionId: operation.transactionId,
@@ -648,7 +707,7 @@ export function createApp(config, overrides = {}) {
         }
         const circleState = String(transaction.state || "").toUpperCase();
         if (["FAILED", "DENIED", "CANCELLED", "EXPIRED"].includes(circleState)) {
-          operationStore.update(operation.id, { status: "transaction_failed" });
+          await operationStore.update(operation.id, { status: "transaction_failed" });
           const durable = await workflowStore.findByOperationId(operation.id);
           if (durable) await workflowStore.update(durable.id, { state: "claim_certified", error: {
             stage: "circle_approval", message: transaction.errorReason ?? "Circle rejected or failed the transaction.", at: new Date().toISOString(),
@@ -673,10 +732,10 @@ export function createApp(config, overrides = {}) {
         }
 
         const firstCircleCompleteAt = operation.firstCircleCompleteAt ?? Date.now();
-        operationStore.update(operation.id, { firstCircleCompleteAt });
+        await operationStore.update(operation.id, { firstCircleCompleteAt });
         try {
           const receipt = await v1ChainReads.verifyWorkerAdvance(transaction.txHash, operation);
-          operationStore.update(operation.id, { status: "transaction_confirmed", txHash: receipt.transactionHash });
+          await operationStore.update(operation.id, { status: "transaction_confirmed", txHash: receipt.transactionHash });
           const durable = await workflowStore.findByOperationId(operation.id);
           if (durable) await workflowStore.update(durable.id, { state: "advance_confirmed", advance: {
             ...durable.advance, transactionId: operation.transactionId,
@@ -706,7 +765,7 @@ export function createApp(config, overrides = {}) {
             }, headers);
             return;
           }
-          operationStore.update(operation.id, { status: "transaction_failed" });
+          await operationStore.update(operation.id, { status: "transaction_failed" });
           const durable = await workflowStore.findByOperationId(operation.id);
           if (durable) await workflowStore.update(durable.id, { state: "claim_certified", error: {
             stage: "arc_verification", message: error.message, at: new Date().toISOString(),

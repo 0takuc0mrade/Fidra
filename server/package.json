@@ -6,10 +6,14 @@
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env src/index.js",
     "start": "node --env-file-if-exists=.env src/index.js",
-    "check": "node --check src/*.js test/*.test.js",
-    "test": "node --test"
+    "check": "node --check src/*.js scripts/*.js test/*.test.js",
+    "db:migrate": "node --env-file-if-exists=.env scripts/db-migrate.js",
+    "db:status": "node --env-file-if-exists=.env scripts/db-status.js",
+    "test": "node --test",
+    "test:db": "FIDRA_DB_INTEGRATION=true node --env-file-if-exists=.env --test test/postgres.integration.test.js"
   },
   "dependencies": {
+    "pg": "^8.23.0",
     "viem": "^2.55.1"
   }
 }

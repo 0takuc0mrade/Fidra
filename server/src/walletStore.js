@@ -29,7 +29,7 @@ export class WalletStore {
     await rename(temporary, this.metadataFile);
   }
 
-  async upsert(wallet, circleUserId) {
+  async upsert(wallet, circleUserRef) {
     return this.withWriteLock(async () => {
       const data = await this.readAll();
       const previous = data.wallets[wallet.id] ?? {};
@@ -39,7 +39,7 @@ export class WalletStore {
         address: wallet.address,
         blockchain: wallet.blockchain,
         accountType: wallet.accountType,
-        circleUserId,
+        circleUserRef,
         recordedAt: previous.recordedAt ?? new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

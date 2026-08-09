@@ -132,15 +132,18 @@ owner bootstrap and a separate controlled live-browser test. See the
 [architecture](docs/V1_4_ARCHITECTURE.md), and
 [live runbook](docs/V1_4_LIVE_RUNBOOK.md).
 
-## V1.5 public deployment preparation
+## V1.5.1 public deployment preparation
 
 V1.5 hosts the proven `/try` journey without changing the protocol. The target
-architecture is a Cloudflare Pages frontend and a single paid Render Node
-service with a persistent disk for durable workflow and gas-seed records.
+architecture is a Vercel frontend, a free Render Node service and Neon Postgres
+for durable workflow, idempotency, budget, rate-limit and gas-seed records.
+Hosted mode fails closed without a reachable, migrated database; JSON adapters
+remain local/test-only.
 Sandbox writes remain disabled until the hosted read-only, signer, origin,
 cookie, persistence, balance, budget, and kill-switch preflight passes.
 
-See the [public deployment specification](docs/PUBLIC_DEPLOYMENT.md). A public
+See the [Postgres migration map](docs/V1_5_1_POSTGRES_MIGRATION.md) and
+[public deployment specification](docs/PUBLIC_DEPLOYMENT.md). A public
 URL is not yet recorded, and this testnet milestone is not production-ready.
 
 ## Repository structure

@@ -36,7 +36,7 @@ export class OperationStore {
 
   get(id, sessionId) {
     const operation = this.operations.get(id);
-    if (!operation || operation.sessionId !== sessionId) return null;
+    if (!operation || (operation.ownerRef ?? operation.sessionId) !== sessionId) return null;
     if (operation.expiresAt <= this.now()) {
       operation.status = "transaction_timed_out";
     }
@@ -46,6 +46,7 @@ export class OperationStore {
   bind(id, sessionId, transactionId) {
     const operation = this.get(id, sessionId);
     if (!operation) return null;
+    if (["transaction_confirmed", "transaction_failed", "transaction_timed_out", "cancelled"].includes(operation.status)) return false;
     if (operation.transactionId && operation.transactionId !== transactionId) return false;
     operation.transactionId = transactionId;
     operation.status = "transaction_pending";

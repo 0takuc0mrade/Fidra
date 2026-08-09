@@ -74,6 +74,8 @@ export class GasSeedService {
         status: "not_needed",
         reason: "Wallet already has at least the configured native gas balance.",
         nativeBalanceUsdc: formatEther(existingBalance),
+        amountUnits: "0",
+        requestKeyHash: context.requestKeyHash ?? null,
       };
       await this.walletStore.recordSeed(wallet.id, result);
       return result;
@@ -81,22 +83,47 @@ export class GasSeedService {
 
     const amount = target - existingBalance;
     if (amount <= 0n || amount > maximum) throw new GasSeedError("The requested gas top-up exceeds the per-wallet maximum.", 429);
-    const dailyTotal = await this.walletStore.dailyConfirmedSeedTotal();
-    if (dailyTotal + Number(formatEther(amount)) > this.config.seedDailyBudgetUsdc) {
-      throw new GasSeedError("The daily Arc testnet gas budget has been reached.", 429);
-    }
     const funderBalance = await publicClient.getBalance({ address: account.address });
     const reserve = parseEther(String(this.config.seedWalletReserveUsdc));
     if (funderBalance < amount + reserve) throw new GasSeedError("The gas funding wallet is below its reserve threshold.", 503);
+
+    if (typeof this.walletStore.reserveSeed === "function") {
+      const reservation = await this.walletStore.reserveSeed(wallet, {
+        requestKeyHash: context.requestKeyHash ?? null,
+        amountUnits: amount,
+        dailyLimitUnits: parseEther(String(this.config.seedDailyBudgetUsdc)),
+      });
+      if (reservation.budgetExceeded) throw new GasSeedError("The daily Arc testnet gas budget has been reached.", 429);
+      if (!reservation.reserved) {
+        const existing = reservation.existing;
+        if (existing?.transaction_hash) {
+          return { ...existing.public_receipt, status: "already_seeded", transactionHash: existing.transaction_hash };
+        }
+        throw new GasSeedError("Gas funding for this wallet is already reserved and requires recovery.", 409);
+      }
+    } else {
+      const dailyTotal = await this.walletStore.dailyConfirmedSeedTotal();
+      if (dailyTotal + Number(formatEther(amount)) > this.config.seedDailyBudgetUsdc) {
+        throw new GasSeedError("The daily Arc testnet gas budget has been reached.", 429);
+      }
+    }
     const transactionHash = await walletClient.sendTransaction({
       account,
       to: wallet.address,
       value: amount,
     });
+    await this.walletStore.recordSeed(wallet.id, {
+      status: "submitted",
+      amountUnits: amount.toString(),
+      amountUsdc: formatEther(amount),
+      transactionHash,
+      requestKeyHash: context.requestKeyHash ?? null,
+    });
     const receipt = await publicClient.waitForTransactionReceipt({ hash: transactionHash, confirmations: 1 });
     if (receipt.status !== "success") throw new GasSeedError("Arc gas seed transaction reverted.", 502);
     const result = {
       status: "confirmed",
+      amountUnits: amount.toString(),
       amountUsdc: formatEther(amount),
       targetBalanceUsdc: String(this.config.seedAmountUsdc),
       transactionHash,

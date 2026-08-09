@@ -52,7 +52,10 @@ The Vite development server proxies `/api` to `http://127.0.0.1:8787`. Do not ex
 
 It then asks Circle to prepare `purchaseAdvance(uint256)` against the deployed AdvanceVaultV2. The minimum is an API quote guard and is not inserted into calldata because the immutable V1 function accepts only the claim ID.
 
-Each prepared challenge is correlated in memory with the session, wallet, claim, platform, face value, fee, advance, and quote block. After Circle supplies a transaction hash, Fidra independently verifies:
+Each prepared challenge is correlated durably to a hashed Circle user reference,
+workflow, wallet, claim, platform, face value, fee, advance and quote block. Raw
+Circle authentication/session material remains in memory only. After Circle
+supplies a transaction hash, Fidra independently verifies:
 
 1. a successful Arc receipt;
 2. exact worker sender;
@@ -82,7 +85,8 @@ The optional gas seeder transfers Arc native testnet USDC only for transaction f
 
 ## V1.4 self-service demo
 
-`/try` uses durable, ignored `0600` workflow records and four bounded endpoints:
+`/try` uses a durable workflow adapter and four bounded endpoints. Local tests
+may use ignored `0600` JSON records; hosted mode requires Neon Postgres:
 
 - `GET|POST /api/demo/workflow`
 - `POST /api/demo/workflow/gas`
@@ -107,10 +111,12 @@ either runtime signer.
 The server accepts the host-provided `PORT` and binds to `HOST` (`0.0.0.0` by
 default). `GET /api/health` is the minimal non-secret health-check endpoint.
 
-For Render, use one paid instance with a persistent disk mounted at
-`/var/data/fidra` and set `FIDRA_RUNTIME_DATA_DIR=/var/data/fidra`. This places
-both `worker-wallets.json` and `demo-workflows.json` on the mounted disk. Do not
-scale the JSON-backed service beyond one instance.
+For free Render, configure the Neon pooled `DATABASE_URL` only in the server
+environment. Run `npm run db:migrate` and `npm run db:status` before deployment.
+Postgres stores hashed Circle ownership references, public wallet/receipt data,
+workflow and operation correlation, atomic budgets and shared rate limits. It
+does not store Circle tokens, OTPs, email addresses, session cookies or keys.
+Production startup fails closed rather than using the ephemeral Render disk.
 
 Set `SERVER_ALLOWED_ORIGINS` to the exact HTTPS frontend origin. If the frontend
 and API are cross-site provider domains, set both `SESSION_COOKIE_SECURE=true`

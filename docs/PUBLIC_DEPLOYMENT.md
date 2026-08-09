@@ -11,15 +11,13 @@ protocol's financial semantics.
 
 The initial hosting target is:
 
-- Cloudflare Pages for the Vite frontend;
-- one paid Render Node web service for the API; and
-- one Render persistent disk mounted at `/var/data/fidra`.
+- Vercel for the Vite frontend;
+- one free Render Node web service for the API; and
+- Neon Free Postgres for durable workflow state.
 
-A paid Render service is required for this design because ordinary Render
-service filesystems are ephemeral and persistent disks are not available to
-free web services. Cloudflare Pages and Render may use their provider domains,
-but a shared custom parent domain is preferred. When the two origins are
-cross-site, the session cookie must explicitly use `SameSite=None; Secure`.
+The Render filesystem is treated as ephemeral. Hosted state, idempotency,
+budgets, operation correlation and rate limits live in Postgres. A shared custom
+parent domain is preferred; cross-site origins require `SameSite=None; Secure`.
 
 ## Build and runtime inventory
 
@@ -34,24 +32,21 @@ cross-site, the session cookie must explicitly use `SameSite=None; Secure`.
 | Frontend build | `npm ci && npm run build` |
 | Frontend output | `web/dist` |
 | Frontend API | `VITE_API_BASE_URL=https://<backend-host>` |
-| SPA fallback | `web/public/_redirects` |
-| Persistent mount | `/var/data/fidra` |
-| Runtime data | `FIDRA_RUNTIME_DATA_DIR=/var/data/fidra` |
+| SPA fallback | `vercel.json` |
+| Durable state | Neon Postgres through server-only `DATABASE_URL` |
+| Database setup | `npm run db:migrate`; `npm run db:status` |
 
-The runtime directory contains only durable wallet metadata, gas-seed receipts,
-and demo workflow/idempotency records. Circle user tokens, refresh tokens, OTPs,
-device encryption material, email addresses, and private keys must never be
-written there. Circle sessions intentionally remain in memory and therefore
+Postgres contains only hashed Circle user references, public wallet metadata,
+gas-seed receipts, workflows, operation correlation, budgets and rate limits.
+Circle user tokens, refresh tokens, OTPs, device encryption material, email
+addresses, session cookies and private keys must never be written there. Circle
+sessions intentionally remain in memory and therefore
 require reauthentication after a backend restart; the durable workflow is then
 re-associated through the hashed Circle user identifier and verified wallet.
 
-The request-per-minute limiter is also process-local. It resets on restart and
-is only a burst-control layer. Financial limits do not depend on it: the
-once-per-wallet gas record and daily gas/claim budgets are derived from durable
-records, and the contracts independently enforce claim ownership, platform
-credit, reserve, exposure, and one-purchase/one-settlement rules. V1.5 uses one
-Render instance because the file stores and in-process locks are not designed
-for multi-instance writes.
+Rate limits, once-per-wallet gas reservations and daily gas/claim budgets use
+atomic Postgres operations. Contracts independently enforce claim ownership,
+platform credit, reserve, exposure and one-purchase/one-settlement rules.
 
 ## Backend environment
 
@@ -72,7 +67,6 @@ V1_EARNINGS_MANAGER_ADDRESS=0xdC1C359fC174Fb8C7cDcbE0e09447d123dD9cD57
 V1_ADVANCE_VAULT_ADDRESS=0x12604e5acD074D3499C9ac4D2cbb4Bd39ECE49c5
 V1_DEPLOYMENT_BLOCK=55168614
 PROTOCOL_OWNER_ADDRESS=0xeC68c705001a158d0f810182Ca205887679E33f5
-FIDRA_RUNTIME_DATA_DIR=/var/data/fidra
 SERVER_ALLOWED_ORIGINS=https://<frontend-host>
 SESSION_COOKIE_SECURE=true
 SESSION_COOKIE_SAME_SITE=None
@@ -90,7 +84,9 @@ CIRCLE_MOCK_MODE=false
 CIRCLE_ENV=sandbox
 CIRCLE_API_KEY=<Render secret>
 CIRCLE_APP_ID=<Circle application ID>
-WORKER_GAS_SEED_ENABLED=true
+DATABASE_URL=<Neon pooled connection string>
+DATABASE_POOL_MAX=5
+WORKER_GAS_SEED_ENABLED=false
 OPERATOR_SEED_PRIVATE_KEY=<Render secret>
 SANDBOX_WRITES_ENABLED=false
 SANDBOX_PLATFORM_ID=3
@@ -120,37 +116,39 @@ VITE_V1_LIVE_PLATFORM_ID=3
 ```
 
 Circle's API key, signer keys, SMTP values, tokens, and session material must
-never be present in the Pages environment or built JavaScript.
+never be present in the Vercel environment or built JavaScript.
 
 ## Deployment order
 
 1. Secret-scan the working tree and V1.4.1 evidence. Keep evidence publication
    separate unless explicitly authorized.
-2. Deploy the Render API from the approved branch with sandbox writes disabled,
-   a health check at `/api/health`, and a disk mounted at `/var/data/fidra`.
-3. Confirm HTTPS, health, Circle configuration status, Arc reads, disk writes,
-   and restart persistence. Do not start a demo workflow.
-4. Deploy the Vite app to Cloudflare Pages with the API URL set to the exact
+2. Configure Neon, run the versioned migrations, and confirm `db:status` without
+   exposing the connection string.
+3. Deploy the Render API from the approved branch with both write switches
+   disabled and a health check at `/api/health`.
+4. Confirm HTTPS, health, Circle configuration status, Arc reads, database
+   reachability/schema readiness and restart persistence. Do not start a demo workflow.
+5. Deploy the Vite app to Vercel with the API URL set to the exact
    Render HTTPS origin. Confirm direct-route refreshes and that the production
    bundle contains no localhost or secret values.
-5. Add the exact Pages origin to `SERVER_ALLOWED_ORIGINS`. Configure the Circle
+6. Add the exact Vercel origin to `SERVER_ALLOWED_ORIGINS`. Configure the Circle
    application for the hosted browser origin if Circle requires it.
-6. Verify the sandbox signer and gas-funder addresses from the configured
+7. Verify the sandbox signer and gas-funder addresses from the configured
    private keys without printing either key. Confirm they differ from the owner
    and from each other, then verify platform 3, reserve, vault liquidity, gas
    balance, caps, budgets, rate limiting, and both kill switches.
-7. Enable `SANDBOX_WRITES_ENABLED=true` only after that review.
-8. Run one fresh incognito `/try` journey with no terminal or MetaMask. Capture
+8. Enable `SANDBOX_WRITES_ENABLED=true` only after that review.
+9. Run one fresh incognito `/try` journey with no terminal or MetaMask. Capture
    only public URLs, addresses, receipts, balances, and final state.
-9. Restart the backend, reauthenticate, and confirm the completed workflow and
-   receipts recover from the persistent disk. Confirm retrying does not create
+10. Restart the backend, reauthenticate, and confirm the completed workflow and
+   receipts recover from Postgres. Confirm retrying does not create
    another seed, claim, advance, or settlement.
 
 ## Immediate stop conditions
 
 Disable sandbox writes and stop the hosted test on any signer mismatch, wrong
 chain or contract address, permissive CORS response, missing secure cookie,
-unwritable/non-persistent runtime directory, budget divergence, unexpected
+unreachable/outdated database, budget divergence, unexpected
 nonce/state, duplicate financial action, receipt mismatch, or secret exposure.
 
 The public deployment remains an Arc Testnet hackathon demo. It must not be

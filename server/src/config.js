@@ -75,6 +75,8 @@ function runtimeFile(explicitFile, runtimeDirectory, name, fallback) {
 }
 
 export function createConfig(env = process.env) {
+  const hostedMode = env.NODE_ENV === "production";
+  const databaseUrl = env.DATABASE_URL?.trim() || "";
   const walletsEnabled = booleanValue(env.CIRCLE_WALLETS_ENABLED, false);
   const mockMode = booleanValue(env.CIRCLE_MOCK_MODE, false);
   const gasSeedEnabled = booleanValue(env.WORKER_GAS_SEED_ENABLED ?? env.VENDOR_GAS_SEED_ENABLED, false);
@@ -103,10 +105,17 @@ export function createConfig(env = process.env) {
   if (invalidOrigins.length) configurationErrors.push(`SERVER_ALLOWED_ORIGINS contains invalid origins: ${invalidOrigins.join(", ")}.`);
   if (!["lax", "strict", "none"].includes(requestedSameSite)) configurationErrors.push("SESSION_COOKIE_SAME_SITE must be Lax, Strict, or None.");
   if (cookieSameSite === "None" && !secureCookies) configurationErrors.push("SESSION_COOKIE_SAME_SITE=None requires SESSION_COOKIE_SECURE=true.");
+  if (hostedMode && !databaseUrl) configurationErrors.push("DATABASE_URL is required in production.");
 
   return Object.freeze({
     host: env.HOST?.trim() || "0.0.0.0",
     port: positiveInteger(env.PORT, 8787),
+    hostedMode,
+    databaseUrl,
+    databaseConfigured: Boolean(databaseUrl),
+    databasePoolMax: positiveInteger(env.DATABASE_POOL_MAX, 5),
+    databaseConnectTimeoutMs: positiveInteger(env.DATABASE_CONNECT_TIMEOUT_MS, 10_000),
+    databaseIdleTimeoutMs: positiveInteger(env.DATABASE_IDLE_TIMEOUT_MS, 30_000),
     circleBaseUrl: "https://api.circle.com",
     circleEnvironment: env.CIRCLE_ENV?.trim() || "sandbox",
     circleApiKey: env.CIRCLE_API_KEY?.trim() || "",

@@ -25,6 +25,7 @@ test("hosted config uses one runtime directory and a strict cross-site cookie", 
     FIDRA_RUNTIME_DATA_DIR: "/var/data/fidra",
     SERVER_ALLOWED_ORIGINS: "https://fidra.pages.dev/",
     SESSION_COOKIE_SAME_SITE: "None",
+    DATABASE_URL: "postgresql://example.invalid/fidra?sslmode=require",
   });
 
   assert.equal(config.host, "0.0.0.0");
@@ -52,6 +53,17 @@ test("unsafe hosted origin and cookie configuration fails closed", () => {
   assert.ok(config.configurationErrors.some((message) => message.includes("requires SESSION_COOKIE_SECURE=true")));
 });
 
+test("production configuration requires durable Postgres", () => {
+  const config = createConfig({ NODE_ENV: "production" });
+  assert.equal(config.databaseConfigured, false);
+  assert.ok(config.configurationErrors.includes("DATABASE_URL is required in production."));
+});
+
+test("a configured database cannot silently fall back to JSON stores", () => {
+  const config = createConfig({ DATABASE_URL: "postgresql://example.invalid/fidra?sslmode=require" });
+  assert.throws(() => createApp(config), /Postgres storage must be initialized/);
+});
+
 test("session cookies support secure cross-site hosting and matching deletion", () => {
   const session = { id: "session-id", expiresAt: Date.now() + 60_000 };
   const created = sessionCookie(session, true, "None");
@@ -68,7 +80,32 @@ test("health endpoint is public, minimal, and non-cacheable", async () => {
   const response = await fetch(`${baseUrl}/api/health`);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("cache-control"), "no-store");
-  assert.deepEqual(await response.json(), { status: "ok" });
+  assert.deepEqual(await response.json(), {
+    status: "ok",
+    process: { healthy: true },
+    database: { configured: false, reachable: false, schemaReady: false },
+  });
+});
+
+test("health fails closed without exposing database connection details", async () => {
+  const databaseUrl = "postgresql://private-user:private-password@example.invalid/fidra";
+  const config = createConfig({ DATABASE_URL: databaseUrl });
+  const storage = {
+    walletStore: {}, workflowStore: {}, operationStore: {}, requestLimiter: {},
+    health: async () => ({ configured: true, reachable: false, schemaReady: false }),
+  };
+  const baseUrl = await start(config, { storage });
+  const response = await fetch(`${baseUrl}/api/health`);
+  const raw = await response.text();
+  assert.equal(response.status, 503);
+  assert.deepEqual(JSON.parse(raw), {
+    status: "unavailable",
+    process: { healthy: true },
+    database: { configured: true, reachable: false, schemaReady: false },
+  });
+  assert.ok(!raw.includes("private-user"));
+  assert.ok(!raw.includes("private-password"));
+  assert.ok(!raw.includes("example.invalid"));
 });
 
 test("cross-origin session start returns exact CORS and cookie attributes", async () => {
